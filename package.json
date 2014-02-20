@@ -1,0 +1,23 @@
+{
+  "name": "sync-gateway-utils",
+  "dependencies": {
+    "couchbase": "*",
+    "express" : "*"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.2",
+    "grunt-contrib-jshint": "~0.6.3",
+    "grunt-contrib-uglify": "~0.2.7",
+    "grunt-react": "~0.6.0",
+    "browserify": "~3.19.1",
+    "grunt-browserify": "~1.3.0",
+    "grunt-newer": "~0.6.0",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-copy": "~0.5.0",
+    "grunt-node-tap": "~0.1.52",
+    "tap": "~0.4.8",
+    "tape": "~2.3.2",
+    "grunt-static-inline": "~0.1.2",
+    "grunt-image-embed": "~0.3.1"
+  }
+}
