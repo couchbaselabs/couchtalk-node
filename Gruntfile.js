@@ -124,9 +124,20 @@ module.exports = function(grunt) {
         }
       }
     },
+    express: {
+      options: {
+        // Override defaults here
+        delay : 100
+      },
+      dev: {
+        options: {
+          script: 'lib/server.js'
+        }
+      }
+    },
     watch: {
       scripts: {
-        files: ['Gruntfile.js', 'page/js/*.js'],
+        files: ['Gruntfile.js', 'lib/**/*.js', 'page/js/*.js'],
         tasks: ['jshint:changed', 'default'],
         options: {
           spawn: false,
@@ -152,6 +163,13 @@ module.exports = function(grunt) {
         options: {
           interrupt: true,
         },
+      },
+      express: {
+        files:  [ 'lib/**/*.js' ],
+        tasks:  [ 'express:dev' ],
+        options: {
+          spawn: false
+        }
       }
     }
   })
@@ -165,9 +183,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-node-tap');
   grunt.loadNpmTasks('grunt-static-inline');
   grunt.loadNpmTasks("grunt-image-embed");
+  grunt.loadNpmTasks('grunt-express-server');
 
   grunt.registerTask('jsxhint', ['newer:react', 'jshint:jsx']);
-  grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'copy:assets', 'browserify', 'imageEmbed','uglify', 'staticinline']);
+  grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'copy:assets', 'browserify', 'imageEmbed','uglify']);
 
   grunt.event.on('watch', function(action, filepath) {
     // for (var key in require.cache) {delete require.cache[key];}

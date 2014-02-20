@@ -24,7 +24,7 @@ module.exports = React.createClass({
       this.get('/', function(){
         component.setState({page : "index"})
       })
-      this.get('/room/:id', function(req){
+      this.get('/talk/:id', function(req){
         component.setState({page : "room", params : req.params})
       })
     })
