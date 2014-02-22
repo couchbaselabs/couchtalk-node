@@ -188,6 +188,8 @@ module.exports = function(grunt) {
   grunt.registerTask('jsxhint', ['newer:react', 'jshint:jsx']);
   grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'copy:assets', 'browserify', 'imageEmbed','uglify']);
 
+  grunt.registerTask("dev", ["default", 'express:dev', 'watch'])
+
   grunt.event.on('watch', function(action, filepath) {
     // for (var key in require.cache) {delete require.cache[key];}
     grunt.config('jshint.changed', [filepath]);
