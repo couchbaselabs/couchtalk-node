@@ -68,10 +68,10 @@ module.exports = function(grunt) {
       assets: {
         files: [
           // includes files within path
-          {expand: true, cwd: 'page/', src: ['*'], dest: 'build/', filter: 'isFile'}
+          {expand: true, cwd: 'page/', src: ['*'], dest: 'build/', filter: 'isFile'},
 
           // includes files within path and its sub-directories
-          // {expand: true, cwd: 'page/static', src: ['**'], dest: 'build/static'}
+          {expand: true, cwd: 'page/static', src: ['*.js'], dest: 'build/'}
 
           // makes all src relative to cwd
           // {expand: true, cwd: 'path/', src: ['**'], dest: 'dest/'},
@@ -103,7 +103,7 @@ module.exports = function(grunt) {
       },
       assets: {
         files: {
-          'build/bundle.min.js': ['build/bundle.js'],
+          // 'build/bundle.min.js': ['build/bundle.js'],
           'build/vendor.min.js': ['page/vendor/*.js']
         }
       }
