@@ -112,7 +112,7 @@ module.exports = React.createClass({
     }.bind(this))
   },
   render : function() {
-    var url = location.origin + "/talk/" + this.props.id
+    var url = location.origin + "/talk/" + this.props.id;
     var recording = this.state.recording ?
       <span className="recording">Recording.</span> :
       <span/>;
@@ -125,7 +125,18 @@ module.exports = React.createClass({
       </header>
       <ul>
         {this.state.messages.map(function(m) {
-          return <li>{m.snap} - {m.audio}</li>
+          var snapURL = "/snapshot/" + m.snap;
+          var audioURL = m.audio ? "/audio/" + m.audio : null
+          if (audioURL) {
+            return (<li>
+                      <img src={snapURL}/>
+                      <audio src={audioURL} controls="controls"/>
+                    </li>)
+          } else {
+            return (<li>
+                      <img src={snapURL}/>
+                    </li>)
+          }
         })}
       </ul>
       </div>
