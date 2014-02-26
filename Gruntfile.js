@@ -127,7 +127,9 @@ module.exports = function(grunt) {
     express: {
       options: {
         // Override defaults here
-        delay : 100
+        delay : 100,
+        // background: false,
+        debug: true
       },
       dev: {
         options: {
@@ -171,6 +173,19 @@ module.exports = function(grunt) {
           spawn: false
         }
       }
+    },
+    notify: {
+      "uglify": {
+        options: {
+          title: 'Default',  // optional
+          message: 'Success', //required
+        }
+      },
+      'express:dev': {
+        options: {
+          message: 'Dev server is running.'
+        }
+      }
     }
   })
   grunt.loadNpmTasks('grunt-newer');
@@ -184,6 +199,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-static-inline');
   grunt.loadNpmTasks("grunt-image-embed");
   grunt.loadNpmTasks('grunt-express-server');
+  grunt.loadNpmTasks('grunt-notify');
 
   grunt.registerTask('jsxhint', ['newer:react', 'jshint:jsx']);
   grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'copy:assets', 'browserify', 'imageEmbed','uglify']);

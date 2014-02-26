@@ -3,6 +3,7 @@
  */
  /* global Davis */
  /* global Zepto */
+ /* global io */
  /* global Recorder */
  /* global AudioContext */
 
@@ -54,7 +55,7 @@ function connectAudio(cb) {
         console.log("recorder did start")
         recorderStart()
         if (recorder.onRecordStart) {
-          recorder.onRecordStart()
+          recorder.onRecordStart(recorder)
         }
       }
       recorder.stream = stream;
@@ -80,17 +81,16 @@ module.exports = React.createClass({
       video.muted = true;
       video.src = window.URL.createObjectURL(recorder.stream);
       recorder.onRecordStart = this.onRecordStart;
-      this.setState({recorder: recorder})
+      this.setState({recorder: recorder, socket : io.connect(location.origin)})
     }.bind(this))
   },
-  onRecordStart : function(){
+  onRecordStart : function(recorder){
     var rootNode = $(this.getDOMNode());
     var canvas = rootNode.find("canvas")[0];
     var video = rootNode.find("video")[0];
     var ctx = canvas.getContext('2d');
-    console.log(video, canvas, ctx)
     ctx.drawImage(video, 0, 0, video.width, video.height);
-    rootNode.find("img")[0].src = canvas.toDataURL("image/webp");
+    if (recorder.onSnapshot) {recorder.onSnapshot(canvas.toDataURL("image/png"));}
   },
   componentWillUnmount: function() {
     this.state.router.stop()
@@ -99,13 +99,12 @@ module.exports = React.createClass({
     var page;
     if (this.state.page == "index") {
       page = <IndexPage/>
-    } else if (this.state.page == "room") {
-      page = <TalkPage id={this.state.params.id} recorder={this.state.recorder}/>
+    } else if (this.state.page == "room" && this.state.recorder) {
+      page = <TalkPage id={this.state.params.id} recorder={this.state.recorder} socket={this.state.socket}/>
     }
     return (
         <div className="content">
           <video autoPlay width={320} height={240}/>
-          <img src=""/>
           <canvas style={{display : "none"}} width={320} height={240}/>
           {page}
         </div>
