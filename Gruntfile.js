@@ -175,15 +175,9 @@ module.exports = function(grunt) {
       }
     },
     notify: {
-      "uglify": {
+      "watch": {
         options: {
-          title: 'Default',  // optional
-          message: 'Success', //required
-        }
-      },
-      'express:dev': {
-        options: {
-          message: 'Dev server is running.'
+          message: 'Assets compiled.', //required
         }
       }
     }
@@ -202,7 +196,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-notify');
 
   grunt.registerTask('jsxhint', ['newer:react', 'jshint:jsx']);
-  grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'copy:assets', 'browserify', 'imageEmbed','uglify']);
+  grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'copy:assets', 'browserify', 'imageEmbed','uglify','notify']);
 
   grunt.registerTask("dev", ["default", 'express:dev', 'watch'])
 

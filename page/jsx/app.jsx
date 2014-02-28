@@ -88,8 +88,11 @@ module.exports = React.createClass({
     var rootNode = $(this.getDOMNode());
     var canvas = rootNode.find("canvas")[0];
     var video = rootNode.find("video")[0];
+    video.className = "recording"
     var ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, video.width, video.height);
+    ctx.drawImage(video, 0, 0, video.width*2, video.height*2);
+    // this indirection is because for efficiency reasons we want
+    // to managage the video element at the app.jsx
     if (recorder.onSnapshot) {recorder.onSnapshot(canvas.toDataURL("image/png"));}
   },
   componentWillUnmount: function() {
@@ -104,8 +107,8 @@ module.exports = React.createClass({
     }
     return (
         <div className="content">
-          <video autoPlay width={320} height={240}/>
-          <canvas style={{display : "none"}} width={320} height={240}/>
+          <video autoPlay width={320} height={240} />
+          <canvas style={{display : "none"}} width={640} height={480}/>
           {page}
         </div>
       );

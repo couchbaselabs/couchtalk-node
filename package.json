@@ -1,5 +1,5 @@
 {
-  "name": "sync-gateway-utils",
+  "name": "CouchTalk",
   "dependencies": {
     "couchbase": "*",
     "express": "*",
