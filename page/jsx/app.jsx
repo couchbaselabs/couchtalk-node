@@ -206,19 +206,18 @@ var TalkPage = module.exports = React.createClass({
     var recording = this.state.recording ?
       <span className="recording">Recording.</span> :
       <span/>;
+    var oldestKnownMessage = this.state.messages[0];
     return (
       <div className="room">
       <header>
         <video autoPlay width={320} height={240} />
         <canvas style={{display : "none"}} width={640} height={480}/>
-        Invite people to join the conversation: <input className="shareLink" value={url}/>
-        <br/>
-        Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}
+        <p>Invite people to join the conversation: <input className="shareLink" value={url}/></p>
+        <p>Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}</p>
         <audio/>
-        <br/>
-        <input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}><span className="autoplay">Auto-play</span></input>
+        <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>
+        {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
       </header>
-      {!!this.state.messages[0] && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
       <ul className="messages">
         {this.state.messages.map(function(m, i) {
           return <Message
