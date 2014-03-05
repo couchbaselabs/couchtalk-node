@@ -170,7 +170,7 @@ var TalkPage = module.exports = React.createClass({
     if (oldest && oldest.snap) {
       before = parseInt(oldest.snap.split('-')[2], 10)
     }
-    var oldMessages = [], min = Math.max(before - 50, 0)
+    var oldMessages = [], min = Math.max(before - 10, 0)
     for (var i = before - 1; i >= min; i--) {
       oldMessages.unshift({
         snap : ["snap",room,i].join("-"),
@@ -218,7 +218,7 @@ var TalkPage = module.exports = React.createClass({
         <br/>
         <input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}>Auto-play</input>
       </header>
-      <a onClick={this.loadEarlierMessages}>Load earlier messages.</a>
+      {!!this.state.messages[0] && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
       <ul className="messages">
         {this.state.messages.map(function(m, i) {
           return <Message
