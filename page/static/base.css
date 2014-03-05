@@ -136,9 +136,9 @@ ul.messages {
 }
 
 .room li img.unplayed {
-  border: 4px solid #8f8;
+  border: 4px solid #0a0;
 }
 
 .room li img.noAudio {
-  border: 4px solid #400;
+  border: 4px solid #800;
 }
