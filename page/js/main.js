@@ -1,6 +1,9 @@
+/* global $ */
 var App = require("../jsx/app.jsx");
 
-React.renderComponent(
-  App(),
-  document.getElementById('container')
-);
+$(function () {
+  React.renderComponent(
+    App(),
+    document.getElementById('container')
+  );
+})

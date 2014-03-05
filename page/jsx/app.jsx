@@ -1,8 +1,7 @@
 /**
  * @jsx React.DOM
  */
- /* global Davis */
- /* global Zepto */
+ /* global $ */
  /* global io */
  /* global Recorder */
  /* global AudioContext */
@@ -10,26 +9,6 @@
 var helpers = require("./helpers.jsx"),
   IndexPage = require("./index.jsx"),
   TalkPage = require("./room.jsx");
-
-var $ = Davis.$ = Zepto;
-
-function connectRouter(component) {
-  return Davis(function(){
-    this.settings.generateRequestOnPageLoad = true;
-    this.settings.handleRouteNotFound = true;
-
-    // global handlers
-    // this.bind("routeNotFound", routeNotFound)
-    // this.bind("lookupRoute", lookupRoute)
-
-    this.get('/', function(){
-      component.setState({page : "index"})
-    })
-    this.get('/talk/:id', function(req){
-      component.setState({page : "room", params : req.params})
-    })
-  })
-}
 
 function connectAudio(cb) {
   window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -71,8 +50,16 @@ module.exports = React.createClass({
     return {page : "index"}
   },
   componentWillMount: function() {
-    var router = connectRouter(this);
-    this.setState({router : router})
+    // select route
+    if (location.pathname == "/") {
+      this.setState({page : "index"})
+    } else {
+      var match = /\/talk\/(.*)/.exec(location.pathname);
+      console.log(match)
+      if (match) {
+        this.setState({page : "room", id:match[1]})
+      }
+    }
   },
   componentDidMount : function(rootNode){
     connectAudio(function(error, recorder) {
@@ -95,15 +82,12 @@ module.exports = React.createClass({
     // to managage the video element at the app.jsx
     if (recorder.onSnapshot) {recorder.onSnapshot(canvas.toDataURL("image/png"));}
   },
-  componentWillUnmount: function() {
-    this.state.router.stop()
-  },
   render : function() {
     var page;
     if (this.state.page == "index") {
       page = <IndexPage/>
     } else if (this.state.page == "room" && this.state.recorder) {
-      page = <TalkPage id={this.state.params.id} recorder={this.state.recorder} socket={this.state.socket}/>
+      page = <TalkPage id={this.state.id} recorder={this.state.recorder} socket={this.state.socket}/>
     }
     return (
         <div className="content">
@@ -114,19 +98,3 @@ module.exports = React.createClass({
       );
   }
 });
-
-/*  404 handlers
-    If the 404 is in-app, redirect to the index page.
-    Otherwise make a server request for the new page.
-*/
-function routeNotFound(r) {
-  // setTimeout(function(){ // required sleep
-  //   window.location = "/"
-  // },100)
-}
-function lookupRoute(req) {
-  // if (req.path.indexOf("/_admin") !== 0) {
-  //   window.location = req.path;
-  //   req.delegateToServer()
-  // }
-}
