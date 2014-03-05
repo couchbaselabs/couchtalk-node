@@ -45,7 +45,7 @@ var TalkPage = module.exports = React.createClass({
         }
         messages[i].audio = message.audio;
         this.setState({messages : messages})
-        if (this.state.nowPlaying === false) {
+        if (this.state.autoplay && this.state.nowPlaying === false) {
           this.playMessage(i)
         }
       } else {
@@ -137,7 +137,8 @@ var TalkPage = module.exports = React.createClass({
       var audio = rootNode.find("audio")[0];
       audio.src = audioURL;
       audio.play();
-      this.setState({nowPlaying : i})
+      message.played = true;
+      this.setState({nowPlaying : i, messages : this.state.messages})
     } else {
       this.setState({nowPlaying : false})
     }
@@ -157,6 +158,10 @@ var TalkPage = module.exports = React.createClass({
     video.muted = true;
     video.src = window.URL.createObjectURL(recorder.stream)
   },
+  autoPlayChanged : function(e){
+    // console.log("autoPlayChanged", e.target.checked)
+    this.setState({autoplay: e.target.checked})
+  },
   componentDidMount : function(rootNode){
     connectAudio(function(error, recorder) {
       if (error) {return reloadError(error)}
@@ -165,25 +170,34 @@ var TalkPage = module.exports = React.createClass({
       this.setState({recorder: recorder, socket : io.connect(location.origin)})
     }.bind(this))
   },
+  componentDidUpdate : function(){
+    var el, els = $(".room img.playing")
+    if (els[0]) {
+      el = els[0]
+    } else {
+      els = $(".room img")
+      el = els[els.length-1]
+    } // todo check for did the user scroll recently
+    if (el) {el.scrollIntoView(false)}
+  },
   render : function() {
     var url = location.origin + "/talk/" + this.props.id;
     var recording = this.state.recording ?
       <span className="recording">Recording.</span> :
       <span/>;
-    var autoplay = false; //todo get from state and checkbox
-    // this.state.messages.forEach(function(m, i) {})
-
     return (
       <div className="room">
       <header>
         <video autoPlay width={320} height={240} />
         <canvas style={{display : "none"}} width={640} height={480}/>
-        Invite people to join the conversation: <input size={70} value={url}/>
+        Invite people to join the conversation: <input className="shareLink" value={url}/>
         <br/>
-        Hold down the space bar while your are talking. {recording}
+        Hold down the space bar while you are talking to record. {recording}
+        <audio/>
+        <br/>
+        <input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}>Auto-play</input>
       </header>
-      <audio/>
-      <ul>
+      <ul className="messages">
         {this.state.messages.map(function(m, i) {
           return <Message
             message={m}
@@ -201,9 +215,22 @@ var TalkPage = module.exports = React.createClass({
 var Message = React.createClass({
   render : function() {
     var snapURL = "/snapshot/" + this.props.message.snap;
-    var playing = this.props.playing ? "playing" : ""
+    var className = "";
+    if (!this.props.message.audio) {
+      className += "noAudio"
+    } else {
+      if (this.props.playing) {
+        className += " playing"
+      } else {
+        if (this.props.message.played) {
+          className += " played"
+        } else {
+          className += " unplayed"
+        }
+      }
+    }
     return (<li>
-              <img className={playing} src={snapURL} onClick={this.props.playMe}/>
+              <img className={className} src={snapURL} onClick={this.props.playMe}/>
             </li>)
   }
 })
@@ -212,5 +239,5 @@ function reloadError(error) {
   console.error("reload",error);
   setTimeout(function(){
     document.location = location
-  },1)
+  },200)
 }

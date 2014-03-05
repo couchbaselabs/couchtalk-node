@@ -82,16 +82,25 @@ a:hover {
   padding:0;
 }
 
-/* Couch Talk */
+/* CouchTalk */
 
 .recording {
   color:#aa0003;
 }
 
-video {
+header {
   position: fixed;
   top: 0;
   right: 0;
+  width: 340px;
+  padding:5px;
+}
+
+.shareLink {
+  width: 100%;
+}
+
+video {
   border: 4px solid #000;
   box-sizing: content-box;
 }
@@ -99,12 +108,12 @@ video {
 video.recording {
   border: 4px solid #f00;
 }
-/*
-.room ul {
-  width: 340px;
-  margin-left: 25%
+
+ul.messages {
+  margin-right: 340px;
+
 }
-*/
+
 
 .room li {
   display: inline-block;
@@ -120,4 +129,16 @@ video.recording {
 
 .room li img.playing {
   border: 4px solid #0f0;
+}
+
+.room li img.played {
+  border: 4px solid #aca;
+}
+
+.room li img.unplayed {
+  border: 4px solid #8f8;
+}
+
+.room li img.noAudio {
+  border: 4px solid #400;
 }
