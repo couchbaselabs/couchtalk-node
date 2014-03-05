@@ -46,7 +46,9 @@ var TalkPage = module.exports = React.createClass({
         messages[i].audio = message.audio;
         this.setState({messages : messages})
         if (this.state.autoplay && this.state.nowPlaying === false) {
-          this.playMessage(i)
+          if (this.state.currentSnapshot !== message.snap) {
+            this.playMessage(i)
+          }
         }
       } else {
         // first time, add it
@@ -192,7 +194,7 @@ var TalkPage = module.exports = React.createClass({
         <canvas style={{display : "none"}} width={640} height={480}/>
         Invite people to join the conversation: <input className="shareLink" value={url}/>
         <br/>
-        Hold down the space bar while you are talking to record. {recording}
+        Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}
         <audio/>
         <br/>
         <input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}>Auto-play</input>
