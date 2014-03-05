@@ -1,5 +1,8 @@
 {
   "name": "CouchTalk",
+  "scripts": {
+    "start" : "node lib/server.js"
+  },
   "dependencies": {
     "couchbase": "*",
     "express": "*",
