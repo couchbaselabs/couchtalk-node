@@ -164,6 +164,21 @@ var TalkPage = module.exports = React.createClass({
     // console.log("autoPlayChanged", e.target.checked)
     this.setState({autoplay: e.target.checked})
   },
+  loadEarlierMessages : function(e){
+    var room = this.props.id, oldest = this.state.messages[0],
+      before;
+    if (oldest && oldest.snap) {
+      before = parseInt(oldest.snap.split('-')[2], 10)
+    }
+    var oldMessages = [], min = Math.max(before - 50, 0)
+    for (var i = before - 1; i >= min; i--) {
+      oldMessages.unshift({
+        snap : ["snap",room,i].join("-"),
+        audio : ["snap",room,i,"audio"].join("-")
+      })
+    }
+    this.setState({messages : oldMessages.concat(this.state.messages)})
+  },
   componentDidMount : function(rootNode){
     connectAudio(function(error, recorder) {
       if (error) {return reloadError(error)}
@@ -172,15 +187,19 @@ var TalkPage = module.exports = React.createClass({
       this.setState({recorder: recorder, socket : io.connect(location.origin)})
     }.bind(this))
   },
-  componentDidUpdate : function(){
+  componentDidUpdate : function(oldProps, oldState){
+
     var el, els = $(".room img.playing")
     if (els[0]) {
       el = els[0]
     } else {
-      els = $(".room img")
-      el = els[els.length-1]
+      if (oldState.messages[oldState.messages.length-1].snap !==
+        this.state.messages[this.state.messages.length-1].snap) {
+        els = $(".room img")
+        el = els[els.length-1]
+      }
     } // todo check for did the user scroll recently
-    if (el) {el.scrollIntoView(false)}
+    if (el) {el.scrollIntoView(true)}
   },
   render : function() {
     var url = location.origin + "/talk/" + this.props.id;
@@ -199,6 +218,7 @@ var TalkPage = module.exports = React.createClass({
         <br/>
         <input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}>Auto-play</input>
       </header>
+      <a onClick={this.loadEarlierMessages}>Load earlier messages.</a>
       <ul className="messages">
         {this.state.messages.map(function(m, i) {
           return <Message
