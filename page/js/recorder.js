@@ -24,14 +24,6 @@ function connectAudio(cb) {
     navigator.getUserMedia({audio: true, video: true}, function(stream){
       var input = audio_context.createMediaStreamSource(stream),
         recorder = new Recorder(input, {workerPath: "/recorderWorker.js"});
-      var recorderStart = recorder.record.bind(recorder);
-      recorder.record = function() {
-        console.log("recorder did start")
-        recorderStart()
-        if (recorder.onRecordStart) {
-          recorder.onRecordStart(recorder)
-        }
-      }
       recorder.stream = stream;
       cb(false, recorder)
     }, function(e) {
