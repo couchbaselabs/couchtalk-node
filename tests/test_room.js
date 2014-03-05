@@ -1,5 +1,6 @@
 /*jxshint unused:true */
 
+// this test is a stub
 var room = require("../lib/room"),
   test = require("tape").test;
 
