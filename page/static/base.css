@@ -142,3 +142,7 @@ ul.messages {
 .room li img.noAudio {
   border: 4px solid #800;
 }
+
+.autoplay {
+  color:#0b0;
+}

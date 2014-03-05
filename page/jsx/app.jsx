@@ -216,7 +216,7 @@ var TalkPage = module.exports = React.createClass({
         Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}
         <audio/>
         <br/>
-        <input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}>Auto-play</input>
+        <input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}><span className="autoplay">Auto-play</span></input>
       </header>
       {!!this.state.messages[0] && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
       <ul className="messages">
