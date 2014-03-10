@@ -127,7 +127,7 @@ module.exports = function(grunt) {
     express: {
       options: {
         // Override defaults here
-        delay : 100,
+        // delay : 100,
         // background: false,
         debug: true
       },
