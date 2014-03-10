@@ -4,10 +4,11 @@
     "start" : "node lib/server.js"
   },
   "dependencies": {
-    "couchbase": "*",
-    "express": "*",
+    "couchbase": "1.2.*",
+    "express": "3.4.*",
     "async" : "0.2.10",
-    "request" : "~2.34.0"
+    "request" : "~2.34.0",
+    "socket.io" : "0.9.*"
   },
   "devDependencies": {
     "grunt": "~0.4.2",
