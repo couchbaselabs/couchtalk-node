@@ -6,7 +6,6 @@
   "dependencies": {
     "couchbase": "*",
     "express": "*",
-    "uuid" : "1.4.1",
     "async" : "0.2.10",
     "request" : "~2.34.0"
   },

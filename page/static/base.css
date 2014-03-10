@@ -84,6 +84,18 @@ a:hover {
 
 /* CouchTalk */
 
+#splash {
+  text-align: center;
+}
+
+#splash input {
+  font-size: 200%
+}
+
+#splash form button {
+  font-size: 200%
+}
+
 .recording {
   color:#aa0003;
 }
