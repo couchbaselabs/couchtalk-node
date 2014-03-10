@@ -196,7 +196,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-notify');
 
   grunt.registerTask('jsxhint', ['newer:react', 'jshint:jsx']);
-  grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'copy:assets', 'browserify', 'imageEmbed','uglify','notify']);
+  grunt.registerTask('default', ['jshint:js', 'jsxhint', 'node_tap:all', 'build', 'notify']);
+
+  grunt.registerTask("build", ['copy:assets', 'browserify', 'imageEmbed','uglify'])
 
   grunt.registerTask("dev", ["default", 'express:dev', 'watch'])
 
