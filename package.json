@@ -8,6 +8,7 @@
     "express": "3.4.*",
     "async" : "0.2.10",
     "request" : "~2.34.0",
+    "getusermedia" : "0.2.1",
     "socket.io" : "0.9.*"
   },
   "devDependencies": {
