@@ -133,11 +133,10 @@ var TalkPage = module.exports = React.createClass({
   playMessage : function(i){
     var message = this.state.messages[i];
     if (message && message.audio) {
-      var audioURL = "/audio/" + message.audio;
       var rootNode = $(this.getDOMNode());
-      // set the src of the audio and play it
-      var audio = rootNode.find("audio")[0];
-      audio.src = audioURL;
+      // play the audio from the beginning
+      var audio = rootNode.find("audio")[i];
+      audio.load()
       audio.play();
       message.played = true;
       this.setState({nowPlaying : i, messages : this.state.messages})
@@ -156,7 +155,6 @@ var TalkPage = module.exports = React.createClass({
     var
       audio = $(rootNode).find("audio")[0],
       video = $(rootNode).find("video")[0]
-    audio.addEventListener('ended', this.playFinished)
     video.muted = true;
     video.src = window.URL.createObjectURL(recorder.stream)
   },
@@ -188,13 +186,12 @@ var TalkPage = module.exports = React.createClass({
     }.bind(this))
   },
   componentDidUpdate : function(oldProps, oldState){
-
     var el, els = $(".room img.playing")
     if (els[0]) {
       el = els[0]
     } else {
-      if (oldState.messages[oldState.messages.length-1].snap !==
-        this.state.messages[this.state.messages.length-1].snap) {
+      if (oldState.messages[oldState.messages.length-1] && (oldState.messages[oldState.messages.length-1].snap !==
+              this.state.messages[this.state.messages.length-1].snap)) {
         els = $(".room img")
         el = els[els.length-1]
       }
@@ -214,7 +211,6 @@ var TalkPage = module.exports = React.createClass({
         <canvas style={{display : "none"}} width={640} height={480}/>
         <p>Invite people to join the conversation: <input className="shareLink" value={url}/></p>
         <p>Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}</p>
-        <audio/>
         <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
       </header>
@@ -224,6 +220,7 @@ var TalkPage = module.exports = React.createClass({
             message={m}
             key={m.snap}
             playing={this.state.nowPlaying === i}
+            playFinished={this.playFinished}
             playMe={this.playMessage.bind(this, i)}
             />
         }, this)}
@@ -234,9 +231,15 @@ var TalkPage = module.exports = React.createClass({
 })
 
 var Message = React.createClass({
+  componentDidMount : function(){
+    var audio = $(this.getDOMNode()).find("audio")[0];
+    audio.addEventListener('ended', this.props.playFinished)
+  },
   render : function() {
     var snapURL = "/snapshot/" + this.props.message.snap;
+    var audioURL = "/audio/" + this.props.message.audio;
     var className = "";
+
     if (!this.props.message.audio) {
       className += "noAudio"
     } else {
@@ -252,6 +255,7 @@ var Message = React.createClass({
     }
     return (<li>
               <img className={className} src={snapURL} onClick={this.props.playMe}/>
+              <audio src={audioURL}/>
             </li>)
   }
 })
