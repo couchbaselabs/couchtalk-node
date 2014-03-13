@@ -62,63 +62,96 @@ var TalkPage = module.exports = React.createClass({
   },
   listenForSpaceBar : function(){
     // record while spacebar is down
+    var currentKeypressId // set on keydown
+
     window.onkeydown = function (e) {
       var code = e.keyCode ? e.keyCode : e.which;
+
       if (code === 32) { //spacebar
         e.preventDefault()
-        this.startRecord()
+        currentKeypressId = Math.random().toString()
+        // create a stop record function to go with the
+        // action. basically a future for this
+        // recording
+        // what if we generated the ID here?
+        this.startRecord(currentKeypressId)
       }
     }.bind(this);
     window.onkeyup = function (e) {
       var code = e.keyCode ? e.keyCode : e.which;
       if (code === 32) { // spacebar
-        this.stopRecord()
+        this.stopRecord(function(passedKeypressId){
+          return (passedKeypressId == currentKeypressId)
+        })
       }
     }.bind(this);
   },
-  startRecord : function() {
+  startRecord : function(keypressId) {
     if (this.state.recording) return;
-    console.log("startRecord")
+    console.log("startRecord",keypressId)
     this.state.recorder.record()
-    this.takeSnapshot()
-    $("video").addClass("recording")
+    this.takeSnapshot(keypressId)
+    var video = $("video")
+    video.addClass("recording")
+    video.data("keypressId", keypressId)
     this.setState({recording : true});
   },
-  stopRecord : function() {
+  stopRecord : function(keypressIsCurrent) {
     if (!this.state.recording) {
       return console.error("I thought I was recording!")
     }
-    var recorder = this.state.recorder
-    recorder.stop()
-    $("video").removeClass("recording")
-    recorder.exportWAV(this.saveAudio)
-    recorder.clear()
-    this.setState({recording : false})
+    var video =  $("video"),
+      keypressId = video.data("keypressId")
+    // if (keypressIsCurrent(keypressId) {
+      var recorder = this.state.recorder
+      recorder.stop()
+      video.removeClass("recording");
+      this.withSnapShotId(keypressId);
+    // } else {
+      console.log("keypressId not current", keypressId);
+    // }
   },
-  saveAudio : function(wav){
+  withSnapShotId : function(keypressId, retries){
+    if (!window.keypresses){window.keypresses = {}}
+      retries = retries || 0;
+    var currentSnapshotId = window.keypresses[keypressId];
+    var recorder = this.state.recorder
+    if (!currentSnapshotId) {
+      // we haven't got the response
+      // from our snap POST yet
+      if (retries < 5) setTimeout(this.withSnapShotId.bind(this, keypressId, retries+1), 100)
+    } else {
+      recorder.exportWAV(
+        this.saveAudio.bind(this, currentSnapshotId))
+      recorder.clear()
+      console.log("stopped recording", keypressId)
+      this.setState({recording : false})
+    }
+  },
+  saveAudio : function(currentSnapshot, wav){
     var reader = new FileReader();
     reader.addEventListener("loadend", function() {
-       var parts = reader.result.split(/[,;:]/)
-       $.ajax({
-         type : "POST",
-         url : postAudio + "/" + this.state.currentSnapshot,
-         contentType : parts[1],
-         data : parts[3],
-         success : function() {}
-       })
+      var parts = reader.result.split(/[,;:]/)
+      $.ajax({
+        type : "POST",
+        url : postAudio + "/" + currentSnapshot,
+        contentType : parts[1],
+        data : parts[3],
+        success : function() {}
+      })
     }.bind(this));
     reader.readAsDataURL(wav);
   },
-  takeSnapshot : function(recorder){
+  takeSnapshot : function(keypressId){
     var rootNode = $(this.getDOMNode());
     var canvas = rootNode.find("canvas")[0];
     var video = rootNode.find("video")[0];
     video.className = "recording"
     var ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, video.width*2, video.height*2);
-    this.saveSnapshot(canvas.toDataURL("image/png"));
+    this.saveSnapshot(canvas.toDataURL("image/png"), keypressId);
   },
-  saveSnapshot : function(png){
+  saveSnapshot : function(png, keypressId){
     var parts = png.split(/[,;:]/)
     $.ajax({
       type : "POST",
@@ -126,7 +159,8 @@ var TalkPage = module.exports = React.createClass({
       contentType : parts[1],
       data : parts[3],
       success : function(data) {
-        this.setState({currentSnapshot : data.id})
+        if (!window.keypresses){window.keypresses = {}}
+        window.keypresses[keypressId] = data.id;
       }.bind(this)
     })
   },
@@ -135,11 +169,20 @@ var TalkPage = module.exports = React.createClass({
     if (message && message.audio) {
       var rootNode = $(this.getDOMNode());
       // play the audio from the beginning
-      var audio = rootNode.find("audio")[i];
+      var audio = rootNode.find("audio")[i]
       audio.load()
-      audio.play();
-      message.played = true;
-      this.setState({nowPlaying : i, messages : this.state.messages})
+      audio.play()
+      setTimeout(function(){
+        console.log("timeout check",
+          i, this.state, audio.ended)
+        if (this.state.nowPlaying == i && audio.ended) {
+          this.playFinished()
+        }
+      }.bind(this), 100)
+      message.played = true
+      this.setState({
+        nowPlaying : i,
+        messages : this.state.messages})
     } else {
       this.setState({nowPlaying : false})
     }
@@ -152,14 +195,11 @@ var TalkPage = module.exports = React.createClass({
     }
   },
   setupAudioVideo : function(rootNode, recorder){
-    var
-      audio = $(rootNode).find("audio")[0],
-      video = $(rootNode).find("video")[0]
+    var video = $(rootNode).find("video")[0]
     video.muted = true;
     video.src = window.URL.createObjectURL(recorder.stream)
   },
   autoPlayChanged : function(e){
-    // console.log("autoPlayChanged", e.target.checked)
     this.setState({autoplay: e.target.checked})
   },
   loadEarlierMessages : function(e){
