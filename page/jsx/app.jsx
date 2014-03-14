@@ -7,9 +7,7 @@
 
 var
   connectAudio = require("../js/recorder").connectAudio,
-  getUserMedia = require("getusermedia"),
-  postSnapshot = location.origin + "/snapshot",
-  postAudio = location.origin + "/audio"
+  getUserMedia = require("getusermedia");
 
 var TalkPage = module.exports = React.createClass({
   propTypes : {
@@ -19,6 +17,7 @@ var TalkPage = module.exports = React.createClass({
     return {
       recording: false,
       messages : [],
+      session : "s:"+Math.random().toString(20),
       autoplay : true,
       nowPlaying : false,
     }
@@ -30,23 +29,36 @@ var TalkPage = module.exports = React.createClass({
     var socket = io.connect(location.origin)
     socket.emit("join", {id : this.props.id})
     socket.on("message", this.gotMessage)
+    socket.on("snap-id", this.gotSnapId)
     this.setState({socket : socket})
   },
+  gotSnapId : function(data){
+    if (!window.keypresses){window.keypresses = {}}
+    console.log("snapId", data)
+    window.keypresses[data.keypressId] = data;
+  },
   gotMessage : function(message){
-    console.log("message", message)
     var messages = this.state.messages;
+    console.log("message", message, messages.length)
+
     if (message.snap) {
       if (message.audio) {
         // second time, add audio pointer
+
         for (var i = messages.length - 1; i >= 0; i--) {
-          if (messages[i].snap === message.snap) {
+          console.log("i", i, messages[i])
+          if (messages[i] && messages[i].snap === message.snap) {
             break;
           }
         }
-        messages[i].audio = message.audio;
+        if (messages[i]) {
+          messages[i].audio = message.audio;
+        // } else {
+          // messages[i] = message;
+        }
         this.setState({messages : messages})
         if (this.state.autoplay && this.state.nowPlaying === false) {
-          if (this.state.currentSnapshot !== message.snap) {
+          if (this.state.session !== message.session) {
             this.playMessage(i)
           }
         }
@@ -56,6 +68,8 @@ var TalkPage = module.exports = React.createClass({
         messages.push(message)
         this.setState({messages : messages})
       }
+    } else if (message.audio) {
+      messages.push(message)
     } else {
       console.log("not a snap", message)
     }
@@ -80,6 +94,10 @@ var TalkPage = module.exports = React.createClass({
   startRecord : function(keypressId) {
     if (this.state.recording) return;
     console.log("startRecord",keypressId)
+    this.state.socket.emit("new-snap", {
+      keypressId : keypressId,
+      room : this.props.id
+    })
     this.state.recorder.record()
     this.takeSnapshot(keypressId)
     var video = $("video")
@@ -96,16 +114,17 @@ var TalkPage = module.exports = React.createClass({
       recorder = this.state.recorder;
     recorder.stop()
     video.removeClass("recording");
-    recorder.exportWAV(this.withAudio.bind(this, keypressId))
+    recorder.exportWAV(this.saveAudio.bind(this, keypressId))
     recorder.clear()
     this.setState({recording : false})
     console.log("stopped recording", keypressId)
   },
   withAudio : function(keypressId, wav, retries){
+
+
     retries = retries || 0;
     if (!window.keypresses){window.keypresses = {}}
-
-    var currentSnapshotId = window.keypresses[keypressId];
+    var currentSnapshotId = window.keypresses[keypressId].snapId;
     if (!currentSnapshotId) {
       // we haven't got the response
       // from our snap POST yet
@@ -120,21 +139,23 @@ var TalkPage = module.exports = React.createClass({
       this.saveAudio(wav, currentSnapshotId)
     }
   },
-  saveAudio : function(wav, currentSnapshot){
-    var reader = new FileReader();
-    reader.addEventListener("loadend", function() {
-      var parts = reader.result.split(/[,;:]/)
-      $.ajax({
-        type : "POST",
-        url : postAudio + "/" + currentSnapshot,
-        contentType : parts[1],
-        data : parts[3],
-        success : function() {
-          console.log("saved audio", currentSnapshot)
-        }
-      })
-    }.bind(this));
-    reader.readAsDataURL(wav);
+  saveAudio : function(keypressId, wav){
+    this.withMessageId(keypressId, function(currentSnapshotId){
+      var reader = new FileReader();
+      reader.addEventListener("loadend", function() {
+        var parts = reader.result.split(/[,;:]/)
+        $.ajax({
+          type : "POST",
+          url : "/audio/" + this.props.id + "/" + currentSnapshotId,
+          contentType : parts[1],
+          data : parts[3],
+          success : function() {
+            console.log("saved audio", currentSnapshotId)
+          }
+        })
+      }.bind(this));
+      reader.readAsDataURL(wav);
+    }.bind(this))
   },
   takeSnapshot : function(keypressId){
     var rootNode = $(this.getDOMNode());
@@ -145,19 +166,37 @@ var TalkPage = module.exports = React.createClass({
     ctx.drawImage(video, 0, 0, video.width*2, video.height*2);
     this.saveSnapshot(canvas.toDataURL("image/png"), keypressId);
   },
+  withMessageId: function(keypressId, cb, retries){
+    if (!window.keypresses){window.keypresses = {}}
+    var currentSnapshotId = window.keypresses[keypressId] &&
+      window.keypresses[keypressId].snapId;
+    retries = retries || 0;
+    if (!currentSnapshotId) {
+      // we haven't got the id via socket.io
+      if (retries < 100) {
+        console.log("waiting for snap id for", keypressId)
+        setTimeout(this.withMessageId.bind(this,
+          keypressId, cb, retries+1), 100)
+      } else {
+        console.error("too many retries", keypressId)
+      }
+    } else {
+      cb(currentSnapshotId)
+    }
+  },
   saveSnapshot : function(png, keypressId){
-    var parts = png.split(/[,;:]/)
-    $.ajax({
-      type : "POST",
-      url : postSnapshot + "/" + this.props.id,
-      contentType : parts[1],
-      data : parts[3],
-      success : function(data) {
-        if (!window.keypresses){window.keypresses = {}}
-        window.keypresses[keypressId] = data.id;
-        this.setState({currentSnapshot:data.id})
-      }.bind(this)
-    })
+    this.withMessageId(keypressId, function(messageID) {
+      var parts = png.split(/[,;:]/)
+      $.ajax({
+        type : "POST",
+        url : "/snapshot/" + this.props.id + "/" + messageID,
+        contentType : parts[1],
+        data : parts[3],
+        success : function(data) {
+          console.log("saved snap", messageID)
+        }
+      })
+    }.bind(this))
   },
   playMessage : function(i){
     var message = this.state.messages[i];
@@ -291,9 +330,9 @@ var Message = React.createClass({
       }
     }
     return (<li>
-              <img className={className} src={snapURL} onClick={this.props.playMe}/>
-              <audio src={audioURL}/>
-            </li>)
+        <img className={className} src={snapURL} onClick={this.props.playMe}/>
+        <audio src={audioURL}/>
+      </li>)
   }
 })
 
