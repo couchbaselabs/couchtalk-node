@@ -62,27 +62,18 @@ var TalkPage = module.exports = React.createClass({
   },
   listenForSpaceBar : function(){
     // record while spacebar is down
-    var currentKeypressId // set on keydown
-
     window.onkeydown = function (e) {
       var code = e.keyCode ? e.keyCode : e.which;
 
       if (code === 32) { //spacebar
         e.preventDefault()
-        currentKeypressId = Math.random().toString()
-        // create a stop record function to go with the
-        // action. basically a future for this
-        // recording
-        // what if we generated the ID here?
-        this.startRecord(currentKeypressId)
+        this.startRecord("kp:"+Math.random().toString(20))
       }
     }.bind(this);
     window.onkeyup = function (e) {
       var code = e.keyCode ? e.keyCode : e.which;
       if (code === 32) { // spacebar
-        this.stopRecord(function(passedKeypressId){
-          return (passedKeypressId == currentKeypressId)
-        })
+        this.stopRecord()
       }
     }.bind(this);
   },
@@ -96,39 +87,40 @@ var TalkPage = module.exports = React.createClass({
     video.data("keypressId", keypressId)
     this.setState({recording : true});
   },
-  stopRecord : function(keypressIsCurrent) {
+  stopRecord : function() {
     if (!this.state.recording) {
       return console.error("I thought I was recording!")
     }
     var video =  $("video"),
-      keypressId = video.data("keypressId")
-    // if (keypressIsCurrent(keypressId) {
-      var recorder = this.state.recorder
-      recorder.stop()
-      video.removeClass("recording");
-      this.withSnapShotId(keypressId);
-    // } else {
-      console.log("keypressId not current", keypressId);
-    // }
+      keypressId = video.data("keypressId"),
+      recorder = this.state.recorder;
+    recorder.stop()
+    video.removeClass("recording");
+    recorder.exportWAV(this.withAudio.bind(this, keypressId))
+    recorder.clear()
+    this.setState({recording : false})
+    console.log("stopped recording", keypressId)
   },
-  withSnapShotId : function(keypressId, retries){
+  withAudio : function(keypressId, wav, retries){
+    retries = retries || 0;
     if (!window.keypresses){window.keypresses = {}}
-      retries = retries || 0;
+
     var currentSnapshotId = window.keypresses[keypressId];
-    var recorder = this.state.recorder
     if (!currentSnapshotId) {
       // we haven't got the response
       // from our snap POST yet
-      if (retries < 5) setTimeout(this.withSnapShotId.bind(this, keypressId, retries+1), 100)
+      if (retries < 10) {
+        console.log("waiting for snap id for", keypressId)
+        setTimeout(this.withAudio.bind(this,
+          keypressId, wav, retries+1), 100)
+      } else {
+        console.error("too many retries", keypressId)
+      }
     } else {
-      recorder.exportWAV(
-        this.saveAudio.bind(this, currentSnapshotId))
-      recorder.clear()
-      console.log("stopped recording", keypressId)
-      this.setState({recording : false})
+      this.saveAudio(wav, currentSnapshotId)
     }
   },
-  saveAudio : function(currentSnapshot, wav){
+  saveAudio : function(wav, currentSnapshot){
     var reader = new FileReader();
     reader.addEventListener("loadend", function() {
       var parts = reader.result.split(/[,;:]/)
@@ -137,7 +129,9 @@ var TalkPage = module.exports = React.createClass({
         url : postAudio + "/" + currentSnapshot,
         contentType : parts[1],
         data : parts[3],
-        success : function() {}
+        success : function() {
+          console.log("saved audio", currentSnapshot)
+        }
       })
     }.bind(this));
     reader.readAsDataURL(wav);
@@ -161,6 +155,7 @@ var TalkPage = module.exports = React.createClass({
       success : function(data) {
         if (!window.keypresses){window.keypresses = {}}
         window.keypresses[keypressId] = data.id;
+        this.setState({currentSnapshot:data.id})
       }.bind(this)
     })
   },
