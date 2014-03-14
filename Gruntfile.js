@@ -117,13 +117,13 @@ module.exports = function(grunt) {
         }
       }
     },
-    staticinline: {
-      main: {
-        files: {
-          'build/index.html': 'build/index.html',
-        }
-      }
-    },
+    // staticinline: {
+    //   main: {
+    //     files: {
+    //       'build/index.html': 'build/index.html',
+    //     }
+    //   }
+    // },
     express: {
       options: {
         // Override defaults here
@@ -190,7 +190,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-node-tap');
-  grunt.loadNpmTasks('grunt-static-inline');
+  // grunt.loadNpmTasks('grunt-static-inline');
   grunt.loadNpmTasks("grunt-image-embed");
   grunt.loadNpmTasks('grunt-express-server');
   grunt.loadNpmTasks('grunt-notify');
