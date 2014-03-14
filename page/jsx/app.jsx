@@ -109,7 +109,7 @@ var TalkPage = module.exports = React.createClass({
     if (!currentSnapshotId) {
       // we haven't got the response
       // from our snap POST yet
-      if (retries < 10) {
+      if (retries < 100) {
         console.log("waiting for snap id for", keypressId)
         setTimeout(this.withAudio.bind(this,
           keypressId, wav, retries+1), 100)
@@ -167,13 +167,15 @@ var TalkPage = module.exports = React.createClass({
       var audio = rootNode.find("audio")[i]
       audio.load()
       audio.play()
+
       setTimeout(function(){
         console.log("timeout check",
-          i, this.state, audio.ended)
-        if (this.state.nowPlaying == i && audio.ended) {
+          i, this.state, audio.ended, audio.networkState)
+        if (audio.networkState !== 1) {
           this.playFinished()
         }
       }.bind(this), 100)
+
       message.played = true
       this.setState({
         nowPlaying : i,
