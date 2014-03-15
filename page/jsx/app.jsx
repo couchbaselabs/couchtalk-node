@@ -188,13 +188,13 @@ var TalkPage = module.exports = React.createClass({
       audio.load()
       audio.play()
 
-      setTimeout(function(){
-        console.log("timeout check",
-          i, this.state, audio.ended, audio.networkState)
-        if (audio.networkState !== 1) {
-          this.playFinished()
-        }
-      }.bind(this), 100)
+      // setTimeout(function(){
+      //   console.log("timeout check",
+      //     i, this.state, audio.ended, audio.networkState)
+      //   if (audio.networkState !== 1) {
+      //     this.playFinished()
+      //   }
+      // }.bind(this), 100)
 
       message.played = true
       this.setState({
