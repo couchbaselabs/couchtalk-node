@@ -65,6 +65,16 @@
       });
     }
 
+    this.exportMonoWAV = function(cb, type){
+      currCallback = cb || config.callback;
+      type = type || config.type || 'audio/wav';
+      if (!currCallback) throw new Error('Callback not set');
+      worker.postMessage({
+        command: 'exportMonoWAV',
+        type: type
+      });
+    }
+
     worker.onmessage = function(e){
       var blob = e.data;
       currCallback(blob);

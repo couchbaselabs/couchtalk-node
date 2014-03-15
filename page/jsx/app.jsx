@@ -96,6 +96,7 @@ var TalkPage = module.exports = React.createClass({
     console.log("startRecord",keypressId)
     this.state.socket.emit("new-snap", {
       keypressId : keypressId,
+      session : this.state.session,
       room : this.props.id
     })
     this.state.recorder.record()
@@ -114,30 +115,10 @@ var TalkPage = module.exports = React.createClass({
       recorder = this.state.recorder;
     recorder.stop()
     video.removeClass("recording");
-    recorder.exportWAV(this.saveAudio.bind(this, keypressId))
+    recorder.exportMonoWAV(this.saveAudio.bind(this, keypressId))
     recorder.clear()
     this.setState({recording : false})
     console.log("stopped recording", keypressId)
-  },
-  withAudio : function(keypressId, wav, retries){
-
-
-    retries = retries || 0;
-    if (!window.keypresses){window.keypresses = {}}
-    var currentSnapshotId = window.keypresses[keypressId].snapId;
-    if (!currentSnapshotId) {
-      // we haven't got the response
-      // from our snap POST yet
-      if (retries < 100) {
-        console.log("waiting for snap id for", keypressId)
-        setTimeout(this.withAudio.bind(this,
-          keypressId, wav, retries+1), 100)
-      } else {
-        console.error("too many retries", keypressId)
-      }
-    } else {
-      this.saveAudio(wav, currentSnapshotId)
-    }
   },
   saveAudio : function(keypressId, wav){
     this.withMessageId(keypressId, function(currentSnapshotId){
