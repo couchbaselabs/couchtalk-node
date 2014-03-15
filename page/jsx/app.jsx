@@ -115,7 +115,7 @@ var TalkPage = module.exports = React.createClass({
       recorder = this.state.recorder;
     recorder.stop()
     video.removeClass("recording");
-    recorder.exportWAV(this.saveAudio.bind(this, keypressId))
+    recorder.exportMonoWAV(this.saveAudio.bind(this, keypressId))
     recorder.clear()
     this.setState({recording : false})
     console.log("stopped recording", keypressId)
