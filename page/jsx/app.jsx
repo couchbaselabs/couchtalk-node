@@ -145,7 +145,7 @@ var TalkPage = module.exports = React.createClass({
     video.className = "recording"
     var ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, video.width*2, video.height*2);
-    this.saveSnapshot(canvas.toDataURL("image/png"), keypressId);
+    this.saveSnapshot(canvas.toDataURL("image/jpeg"), keypressId);
   },
   withMessageId: function(keypressId, cb, retries){
     if (!window.keypresses){window.keypresses = {}}
