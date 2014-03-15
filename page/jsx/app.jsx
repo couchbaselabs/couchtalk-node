@@ -115,7 +115,7 @@ var TalkPage = module.exports = React.createClass({
       recorder = this.state.recorder;
     recorder.stop()
     video.removeClass("recording");
-    recorder.exportMonoWAV(this.saveAudio.bind(this, keypressId))
+    recorder.exportWAV(this.saveAudio.bind(this, keypressId))
     recorder.clear()
     this.setState({recording : false})
     console.log("stopped recording", keypressId)
@@ -264,8 +264,8 @@ var TalkPage = module.exports = React.createClass({
     return (
       <div className="room">
       <header>
-        <video autoPlay width={320} height={240} />
-        <canvas style={{display : "none"}} width={640} height={480}/>
+        <video autoPlay width={160} height={120} />
+        <canvas style={{display : "none"}} width={320} height={240}/>
         <p>Invite people to join the conversation: <input className="shareLink" value={url}/></p>
         <p>Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}</p>
         <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>
