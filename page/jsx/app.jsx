@@ -195,24 +195,29 @@ var TalkPage = module.exports = React.createClass({
   playMessage : function(i){
     // todo move to message, remove `i`
     var message = this.state.messages[i];
-    if (message && message.audio) {
-      var rootNode = $(this.getDOMNode());
-      // play the audio from the beginning
-      var audio = rootNode.find("audio")[i]
-      audio.load()
-      audio.play()
-      message.played = true
+    if (message) {
+      if (message.audio) {
+        var rootNode = $(this.getDOMNode());
+        // play the audio from the beginning
 
-      setTimeout(function() {
-        // console.log(audio, audio.ended, audio.networkState)
-        if (audio.networkState != 1) {
-          this.playFinished(message)
-        }
-      }.bind(this),500)
+        var audio = rootNode.find("audio")[i]
+        audio.load()
+        audio.play()
+        message.played = true
+        console.log(audio, audio.ended, audio.networkState)
+        setTimeout(function() {
+          console.log(audio, audio.ended, audio.networkState)
+          if (audio.networkState != 1) {
+            this.playFinished(message)
+          }
+        }.bind(this),500)
 
-      this.setState({
-        nowPlaying : i,
-        messages : this.state.messages})
+        this.setState({
+          nowPlaying : i,
+          messages : this.state.messages})
+      } else {
+        this.playMessage(i+1)
+      }
     } else {
       this.setState({nowPlaying : false})
     }
@@ -330,16 +335,17 @@ var Message = React.createClass({
       this.props.playFinished(this.props.message)
     }.bind(this))
   },
-  shouldComponentUpdate : function(nextProps) {
-    // console.log(nextProps.message)
-
-    // return ["snap","audio","played","playing","image"].filter(function(k){
-    //   return nextProps.message[k] !== this.props.message[k]
-    // }.bind(this)).length !== 0
-return true;
-  },
+//   shouldComponentUpdate : function(nextProps) {
+//     // console.log(nextProps.message)
+// warning
+//     return ["snap","audio","played","playing","image"].filter(function(k){
+//       console.log(k, nextProps.message[k], this.props.message[k])
+//       return nextProps.message[k] !== this.props.message[k]
+//     }.bind(this)).length !== 0
+// // return true;
+//   },
   render : function() {
-    console.log("Render", this.props.message)
+    // console.log("Render", this.props.message)
     var snapURL
     if (this.props.message.image) {
       snapURL = "/snapshot/" + this.props.message.snap;

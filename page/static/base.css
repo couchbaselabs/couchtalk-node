@@ -108,6 +108,11 @@ header {
   padding:5px;
 }
 
+header h2 {
+  text-align: right;
+  color: #ffac35;
+}
+
 aside{
   margin-top: 2em;
   font-size: 86%;
