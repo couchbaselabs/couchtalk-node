@@ -108,6 +108,12 @@ header {
   padding:5px;
 }
 
+aside{
+  margin-top: 2em;
+  font-size: 86%;
+  color:#888;
+}
+
 .shareLink {
   width: 100%;
 }

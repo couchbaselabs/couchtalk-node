@@ -29,56 +29,46 @@ var TalkPage = module.exports = React.createClass({
     var socket = io.connect(location.origin)
     socket.emit("join", {id : this.props.id})
     socket.on("message", this.gotMessage)
-    socket.on("snap-id", this.gotSnapId)
+    socket.on("snap-id", this.gotMessage)
     this.setState({socket : socket})
-  },
-  gotSnapId : function(data){
-    if (!window.keypresses){window.keypresses = {}}
-    console.log("snapId", data)
-    window.keypresses[data.keypressId] = data;
   },
   gotMessage : function(message){
     var messages = this.state.messages;
     console.log("message", message, messages.length)
 
     if (message.snap) {
-      if (message.audio) {
-        // second time, add audio pointer
-
-        for (var i = messages.length - 1; i >= 0; i--) {
-          console.log("i", i, messages[i])
-          if (messages[i] && messages[i].snap === message.snap) {
-            break;
-          }
+      for (var i = messages.length - 1; i >= 0; i--) {
+        // maybe checking keypressId makes more sense?
+        if (messages[i] && messages[i].snap === message.snap) {
+          break;
         }
-        if (messages[i]) {
-          messages[i].audio = message.audio;
-        // } else {
-          // messages[i] = message;
-        }
-        this.setState({messages : messages})
-        if (this.state.autoplay && this.state.nowPlaying === false) {
-          if (this.state.session !== message.session) {
-            this.playMessage(i)
-          }
-        }
+      }
+      if (messages[i]) {
+        // exists in some form
+        $.extend(messages[i], message)
       } else {
         // first time, add it
-        // messages[messages.length-1].next = message
         messages.push(message)
-        this.setState({messages : messages})
+        i = messages.length-1;
       }
-    } else if (message.audio) {
-      messages.push(message)
+      this.setState({messages : messages})
+      this.maybePlay(messages[i], i)
     } else {
-      console.log("not a snap", message)
+      // console.log("no snap field", message)
+    }
+  },
+  maybePlay : function(message, i) {
+    // console.log(this.state, message)
+    if (this.state.autoplay && this.state.nowPlaying === false) {
+      if (this.state.session !== message.session) {
+        this.playMessage(i)
+      }
     }
   },
   listenForSpaceBar : function(){
     // record while spacebar is down
     window.onkeydown = function (e) {
       var code = e.keyCode ? e.keyCode : e.which;
-
       if (code === 32) { //spacebar
         e.preventDefault()
         this.startRecord("kp:"+Math.random().toString(20))
@@ -93,7 +83,7 @@ var TalkPage = module.exports = React.createClass({
   },
   startRecord : function(keypressId) {
     if (this.state.recording) return;
-    console.log("startRecord",keypressId)
+    // console.log("startRecord",keypressId)
     this.state.socket.emit("new-snap", {
       keypressId : keypressId,
       session : this.state.session,
@@ -115,23 +105,25 @@ var TalkPage = module.exports = React.createClass({
       recorder = this.state.recorder;
     recorder.stop()
     video.removeClass("recording");
+
     recorder.exportMonoWAV(this.saveAudio.bind(this, keypressId))
     recorder.clear()
     this.setState({recording : false})
-    console.log("stopped recording", keypressId)
+    // console.log("stopped recording", keypressId)
   },
   saveAudio : function(keypressId, wav){
-    this.withMessageId(keypressId, function(currentSnapshotId){
+    this.messageWithIdForKeypress(keypressId,
+      function(message){
       var reader = new FileReader();
       reader.addEventListener("loadend", function() {
         var parts = reader.result.split(/[,;:]/)
         $.ajax({
           type : "POST",
-          url : "/audio/" + this.props.id + "/" + currentSnapshotId,
+          url : "/audio/" + this.props.id + "/" + message.snap,
           contentType : parts[1],
           data : parts[3],
           success : function() {
-            console.log("saved audio", currentSnapshotId)
+            // console.log("saved audio", message)
           }
         })
       }.bind(this));
@@ -147,39 +139,61 @@ var TalkPage = module.exports = React.createClass({
     ctx.drawImage(video, 0, 0, video.width*2, video.height*2);
     this.saveSnapshot(canvas.toDataURL("image/jpeg"), keypressId);
   },
-  withMessageId: function(keypressId, cb, retries){
-    if (!window.keypresses){window.keypresses = {}}
-    var currentSnapshotId = window.keypresses[keypressId] &&
-      window.keypresses[keypressId].snapId;
-    retries = retries || 0;
-    if (!currentSnapshotId) {
-      // we haven't got the id via socket.io
-      if (retries < 100) {
-        console.log("waiting for snap id for", keypressId)
-        setTimeout(this.withMessageId.bind(this,
-          keypressId, cb, retries+1), 100)
-      } else {
-        console.error("too many retries", keypressId)
+  messageForKeypress : function(keypressId, index) {
+    var messages = this.state.messages;
+    for (var i = messages.length - 1; i >= 0; i--) {
+      var m = messages[i];
+      if (m.keypressId == keypressId) {
+        if (index) {index.i = i;}
+        return m;
       }
-    } else {
-      cb(currentSnapshotId)
+    }
+    return {keypressId : keypressId};
+  },
+  messageWithIdForKeypress : function(keypressId, cb, retries){
+    var message = this.messageForKeypress(keypressId);
+    retries = retries || 0;
+    if (!message.snap) { // we haven't got the id via socket.io
+      if (retries < 100) {
+        // console.log("wait for snap id for", keypressId, message, retries)
+        setTimeout(this.messageWithIdForKeypress.bind(this,
+          keypressId, cb, retries+1), 100*(retries+1))
+      } else {
+        console.error("too many retries", keypressId, message)
+      }
+    } else { // we are good
+      cb(message)
     }
   },
   saveSnapshot : function(png, keypressId){
-    this.withMessageId(keypressId, function(messageID) {
-      var parts = png.split(/[,;:]/)
-      $.ajax({
-        type : "POST",
-        url : "/snapshot/" + this.props.id + "/" + messageID,
-        contentType : parts[1],
-        data : parts[3],
-        success : function(data) {
-          console.log("saved snap", messageID)
-        }
-      })
+    this.messageWithIdForKeypress(keypressId,
+      function(message){
+        var parts = png.split(/[,;:]/)
+        $.ajax({
+          type : "POST",
+          url : "/snapshot/" + this.props.id + "/" + message.snap + "/" + keypressId ,
+          contentType : parts[1],
+          data : parts[3],
+          success : function(data) {
+            // console.log("saved snap", message)
+          }
+        })
     }.bind(this))
   },
+  pleasePlayMessage : function(i){
+    // console.log("pleasePlayMessage", i)
+    if (this.state.nowPlaying !== false) {
+      var rootNode = $(this.getDOMNode());
+      // play the audio from the beginning
+      var audio = rootNode.find("audio")[this.state.nowPlaying]
+      // console.log("should stop", audio)
+      audio.load() // fires ended event?
+    }
+    this.setState({nowPlaying : false})
+    this.playMessage(i)
+  },
   playMessage : function(i){
+    // todo move to message, remove `i`
     var message = this.state.messages[i];
     if (message && message.audio) {
       var rootNode = $(this.getDOMNode());
@@ -187,16 +201,15 @@ var TalkPage = module.exports = React.createClass({
       var audio = rootNode.find("audio")[i]
       audio.load()
       audio.play()
-
-      // setTimeout(function(){
-      //   console.log("timeout check",
-      //     i, this.state, audio.ended, audio.networkState)
-      //   if (audio.networkState !== 1) {
-      //     this.playFinished()
-      //   }
-      // }.bind(this), 100)
-
       message.played = true
+
+      setTimeout(function() {
+        console.log(audio, audio.ended, audio.networkState)
+        if (audio.networkState != 1) {
+          this.playFinished(message)
+        }
+      }.bind(this),500)
+
       this.setState({
         nowPlaying : i,
         messages : this.state.messages})
@@ -204,9 +217,17 @@ var TalkPage = module.exports = React.createClass({
       this.setState({nowPlaying : false})
     }
   },
-  playFinished : function(){
+  playFinished : function(message){
     if (this.state.autoplay) {
-      this.playMessage(this.state.nowPlaying + 1)
+      // find the index of the current message in the messages array
+      // by snap. then play the next one
+      var messages = this.state.messages;
+      for (var i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].snap == message.snap) {
+          break;
+        }
+      }
+      this.playMessage(i + 1)
     } else {
       this.setState({nowPlaying : false})
     }
@@ -229,7 +250,8 @@ var TalkPage = module.exports = React.createClass({
     for (var i = before - 1; i >= min; i--) {
       oldMessages.unshift({
         snap : ["snap",room,i].join("-"),
-        audio : ["snap",room,i,"audio"].join("-")
+        audio : ["snap",room,i,"audio"].join("-"),
+        image : true
       })
     }
     this.setState({messages : oldMessages.concat(this.state.messages)})
@@ -270,6 +292,8 @@ var TalkPage = module.exports = React.createClass({
         <p>Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}</p>
         <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
+        <aside><strong>1998 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
+          <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
       </header>
       <ul className="messages">
         {this.state.messages.map(function(m, i) {
@@ -278,7 +302,7 @@ var TalkPage = module.exports = React.createClass({
             key={m.snap}
             playing={this.state.nowPlaying === i}
             playFinished={this.playFinished}
-            playMe={this.playMessage.bind(this, i)}
+            playMe={this.pleasePlayMessage.bind(this, i)}
             />
         }, this)}
       </ul>
@@ -290,10 +314,14 @@ var TalkPage = module.exports = React.createClass({
 var Message = React.createClass({
   componentDidMount : function(){
     var audio = $(this.getDOMNode()).find("audio")[0];
-    audio.addEventListener('ended', this.props.playFinished)
+    audio.addEventListener('ended', this.props.playFinished.bind(this, this.props.message))
   },
   render : function() {
-    var snapURL = "/snapshot/" + this.props.message.snap;
+    // console.log("Render", this.props)
+    var snapURL
+    if (this.props.message.image) {
+      snapURL = "/snapshot/" + this.props.message.snap;
+    }
     var audioURL = "/audio/" + this.props.message.audio;
     var className = "";
 
