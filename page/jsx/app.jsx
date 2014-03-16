@@ -167,7 +167,7 @@ var TalkPage = module.exports = React.createClass({
   saveSnapshot : function(png, keypressId){
     this.messageWithIdForKeypress(keypressId,
       function(message){
-        console.log("save pic", message)
+        // console.log("save pic", message)
         var parts = png.split(/[,;:]/)
         $.ajax({
           type : "POST",
@@ -175,7 +175,7 @@ var TalkPage = module.exports = React.createClass({
           contentType : parts[1],
           data : parts[3],
           success : function(data) {
-            console.log("saved snap", message)
+            // console.log("saved snap", message)
           }
         })
     }.bind(this))
@@ -204,7 +204,7 @@ var TalkPage = module.exports = React.createClass({
         audio.load()
         audio.play()
         message.played = true
-        console.log(audio, audio.ended, audio.networkState)
+        // console.log(audio, audio.ended, audio.networkState)
         setTimeout(function() {
           console.log(audio, audio.ended, audio.networkState)
           if (audio.networkState != 1) {
@@ -305,8 +305,11 @@ var TalkPage = module.exports = React.createClass({
         {beg}
         <video autoPlay width={160} height={120} />
         <canvas style={{display : "none"}} width={320} height={240}/>
-        <p>Invite people to join the conversation: <input className="shareLink" value={url}/></p>
-        <p>Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}</p>
+        <p>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
+        </p>
+        <p>Hold down the space bar while you are talking to record.
+          <em>All messages are public.</em> {recording}
+        </p>
         <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
         <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
