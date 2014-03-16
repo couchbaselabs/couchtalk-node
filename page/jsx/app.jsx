@@ -298,6 +298,7 @@ var TalkPage = module.exports = React.createClass({
       <span className="recording">Recording.</span> :
       <span/>;
     var oldestKnownMessage = this.state.messages[0];
+    document.title = this.props.id + " - CouchTalk"
     var beg = this.state.recorder ? "" : <h2>Allow Video? &uArr;</h2>;
     return (
       <div className="room">
@@ -308,9 +309,9 @@ var TalkPage = module.exports = React.createClass({
         <p>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
         </p>
         <p>Hold down the space bar while you are talking to record.
-          <em>All messages are public.</em> {recording}
+          <em>All messages are public forever. </em>
         </p>
-        <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>
+        <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>  {recording}
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
         <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
           <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
