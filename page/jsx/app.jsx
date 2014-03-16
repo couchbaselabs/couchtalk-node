@@ -27,7 +27,8 @@ var TalkPage = module.exports = React.createClass({
   },
   joinRoom : function(){
     var socket = io.connect(location.origin)
-    socket.emit("join", {id : this.props.id})
+
+    // socket.emit("join", {id : this.props.id}) // todo send this with req for first snap id
     socket.on("message", this.gotMessage)
     socket.on("snap-id", this.gotMessage)
     this.setState({socket : socket})
@@ -38,7 +39,6 @@ var TalkPage = module.exports = React.createClass({
 
     if (message.snap) {
       for (var i = messages.length - 1; i >= 0; i--) {
-        // maybe checking keypressId makes more sense?
         if (messages[i] && messages[i].snap === message.snap) {
           break;
         }
@@ -134,7 +134,6 @@ var TalkPage = module.exports = React.createClass({
     var rootNode = $(this.getDOMNode());
     var canvas = rootNode.find("canvas")[0];
     var video = rootNode.find("video")[0];
-    video.className = "recording"
     var ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, video.width*2, video.height*2);
     this.saveSnapshot(canvas.toDataURL("image/jpeg"), keypressId);
@@ -168,6 +167,7 @@ var TalkPage = module.exports = React.createClass({
   saveSnapshot : function(png, keypressId){
     this.messageWithIdForKeypress(keypressId,
       function(message){
+        console.log("save pic", message)
         var parts = png.split(/[,;:]/)
         $.ajax({
           type : "POST",
@@ -175,7 +175,7 @@ var TalkPage = module.exports = React.createClass({
           contentType : parts[1],
           data : parts[3],
           success : function(data) {
-            // console.log("saved snap", message)
+            console.log("saved snap", message)
           }
         })
     }.bind(this))
@@ -204,7 +204,7 @@ var TalkPage = module.exports = React.createClass({
       message.played = true
 
       setTimeout(function() {
-        console.log(audio, audio.ended, audio.networkState)
+        // console.log(audio, audio.ended, audio.networkState)
         if (audio.networkState != 1) {
           this.playFinished(message)
         }
@@ -257,11 +257,21 @@ var TalkPage = module.exports = React.createClass({
     this.setState({messages : oldMessages.concat(this.state.messages)})
   },
   componentDidMount : function(rootNode){
+
     connectAudio(function(error, recorder) {
       if (error) {return reloadError(error)}
       this.setupAudioVideo(rootNode, recorder)
       this.listenForSpaceBar()
-      this.setState({recorder: recorder, socket : io.connect(location.origin)})
+      this.state.socket.emit("join", {
+        keypressId : this.state.session,
+        session : this.state.session,
+        room : this.props.id,
+        join : true
+      })
+      setTimeout(function(){
+        this.takeSnapshot(this.state.session)
+      }.bind(this), 100)
+      this.setState({recorder: recorder})
     }.bind(this))
   },
   componentDidUpdate : function(oldProps, oldState){
@@ -283,16 +293,18 @@ var TalkPage = module.exports = React.createClass({
       <span className="recording">Recording.</span> :
       <span/>;
     var oldestKnownMessage = this.state.messages[0];
+    var beg = this.state.recorder ? "" : <h2>Allow Video? &uArr;</h2>;
     return (
       <div className="room">
       <header>
+        {beg}
         <video autoPlay width={160} height={120} />
         <canvas style={{display : "none"}} width={320} height={240}/>
         <p>Invite people to join the conversation: <input className="shareLink" value={url}/></p>
         <p>Hold down the space bar while you are talking to record. <em>All messages are public.</em> {recording}</p>
         <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
-        <aside><strong>1998 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
+        <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
           <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
       </header>
       <ul className="messages">
@@ -314,10 +326,20 @@ var TalkPage = module.exports = React.createClass({
 var Message = React.createClass({
   componentDidMount : function(){
     var audio = $(this.getDOMNode()).find("audio")[0];
-    audio.addEventListener('ended', this.props.playFinished.bind(this, this.props.message))
+    audio.addEventListener('ended', function(){
+      this.props.playFinished(this.props.message)
+    }.bind(this))
+  },
+  shouldComponentUpdate : function(nextProps) {
+    // console.log(nextProps.message)
+
+    // return ["snap","audio","played","playing","image"].filter(function(k){
+    //   return nextProps.message[k] !== this.props.message[k]
+    // }.bind(this)).length !== 0
+return true;
   },
   render : function() {
-    // console.log("Render", this.props)
+    console.log("Render", this.props.message)
     var snapURL
     if (this.props.message.image) {
       snapURL = "/snapshot/" + this.props.message.snap;
@@ -326,7 +348,9 @@ var Message = React.createClass({
     var className = "";
 
     if (!this.props.message.audio) {
-      className += "noAudio"
+      if (!this.props.message.join) {
+        className += "noAudio"
+      }
     } else {
       if (this.props.playing) {
         className += " playing"
@@ -338,7 +362,7 @@ var Message = React.createClass({
         }
       }
     }
-    return (<li>
+    return (<li key={this.props.message.keypressId || this.props.message.snap}>
         <img className={className} src={snapURL} onClick={this.props.playMe}/>
         <audio src={audioURL}/>
       </li>)
