@@ -6,6 +6,8 @@ CouchTalk is an example app showing off node.js with Couchbase Server. To run th
     git clone
     cd couchtalk-nodejs
     npm install
+    npm install -g grunt-cli
+    grunt build
     npm start
 
 The last command will launch the server by running `node lib/server.js`
@@ -14,7 +16,7 @@ The last command will launch the server by running `node lib/server.js`
 
 If you edit the files under `lib/` or `page/` you need to run this to get the changes to show up.
 
-    npm install -g grunt
+    npm install -g grunt-cli
     grunt dev
 
 This will repackage the assets and launch the server in the background. It also watches the source files for changes and regenerates the assets and relaunches the server when you save files.
