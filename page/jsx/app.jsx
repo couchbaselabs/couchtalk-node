@@ -285,7 +285,7 @@ var TalkPage = module.exports = React.createClass({
       })
       setTimeout(function(){
         this.takeSnapshot(this.state.session)
-      }.bind(this), 100)
+      }.bind(this), 1000)
       this.setState({recorder: recorder})
     }.bind(this))
   },
