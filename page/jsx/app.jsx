@@ -220,7 +220,7 @@ var TalkPage = module.exports = React.createClass({
           if (audio.networkState != 1) {
             this.playFinished(message)
           }
-        }.bind(this),500)
+        }.bind(this),1000)
 
         this.setState({
           nowPlaying : i,
