@@ -19,6 +19,8 @@ var TalkPage = module.exports = React.createClass({
       messages : [],
       session : "s:"+Math.random().toString(20),
       autoplay : true,
+      selfDestructTTL : 300,
+      selfDestruct : false,
       nowPlaying : false,
     }
   },
@@ -114,12 +116,16 @@ var TalkPage = module.exports = React.createClass({
   saveAudio : function(keypressId, wav){
     this.messageWithIdForKeypress(keypressId,
       function(message){
-      var reader = new FileReader();
+      var reader = new FileReader(),
+        postURL = "/audio/" + this.props.id + "/" + message.snap + "/" + keypressId;
+      if (this.state.selfDestruct) {
+        postURL+= "?selfDestruct="+this.state.selfDestructTTL;
+      }
       reader.addEventListener("loadend", function() {
         var parts = reader.result.split(/[,;:]/)
         $.ajax({
           type : "POST",
-          url : "/audio/" + this.props.id + "/" + message.snap,
+          url : postURL,
           contentType : parts[1],
           data : parts[3],
           success : function() {
@@ -168,10 +174,14 @@ var TalkPage = module.exports = React.createClass({
     this.messageWithIdForKeypress(keypressId,
       function(message){
         // console.log("save pic", message)
-        var parts = png.split(/[,;:]/)
+        var parts = png.split(/[,;:]/),
+          postURL = "/snapshot/" + this.props.id + "/" + message.snap + "/" + keypressId;
+        if (this.state.selfDestruct) {
+          postURL+= "?selfDestruct="+this.state.selfDestructTTL;
+        }
         $.ajax({
           type : "POST",
-          url : "/snapshot/" + this.props.id + "/" + message.snap + "/" + keypressId ,
+          url : postURL,
           contentType : parts[1],
           data : parts[3],
           success : function(data) {
@@ -292,6 +302,12 @@ var TalkPage = module.exports = React.createClass({
     } // todo check for did the user scroll recently
     if (el) {el.scrollIntoView(true)}
   },
+  selfDestructTTLChanged : function(e) {
+    this.setState({selfDestructTTL:e.target.value})
+  },
+  selfDestructChanged : function(e) {
+    this.setState({selfDestruct:e.target.checked})
+  },
   render : function() {
     var url = location.origin + "/talk/" + this.props.id;
     var recording = this.state.recording ?
@@ -309,9 +325,12 @@ var TalkPage = module.exports = React.createClass({
         <p>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
         </p>
         <p>Hold down the space bar while you are talking to record.
-          <em>All messages are public forever. </em>
+          <em>All messages are public. </em>
         </p>
-        <label className="autoplay">Auto-play<input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/></label>  {recording}
+        <label className="autoplay"><input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/> Auto-play</label> {recording}
+        <br/>
+        <label className="destruct"><input type="checkbox" onChange={this.selfDestructChanged} checked={this.state.selfDestruct}/>Erase my messages after <input type="text" size={4} onChange={this.selfDestructTTLChanged} value={this.state.selfDestructTTL}/> seconds</label>
+
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
         <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
           <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
