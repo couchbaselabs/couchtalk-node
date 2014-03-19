@@ -272,7 +272,6 @@ var TalkPage = module.exports = React.createClass({
     this.setState({messages : oldMessages.concat(this.state.messages)})
   },
   componentDidMount : function(rootNode){
-
     connectAudio(function(error, recorder) {
       if (error) {return reloadError(error)}
       this.setupAudioVideo(rootNode, recorder)
@@ -399,8 +398,12 @@ var Message = React.createClass({
 })
 
 function reloadError(error) {
-  console.error("reload",error);
-  setTimeout(function(){
-    document.location = location
-  },200)
+  if (navigator.getUserMedia) {
+    console.error("reload",error);
+    setTimeout(function(){
+      document.location = location
+    },200)
+  } else {
+    $("h2").html('CouchTalk requires Firefox or Chrome!')
+  }
 }
