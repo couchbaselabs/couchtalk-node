@@ -92,7 +92,10 @@ var TalkPage = module.exports = React.createClass({
       room : this.props.id
     })
     this.state.recorder.record()
-    this.takeSnapshot(keypressId)
+    // this.takeSnapshot(keypressId)
+    setTimeout(function(){
+      this.takeSnapshot(keypressId)
+    }.bind(this), 250)
     var video = $("video")
     video.addClass("recording")
     video.data("keypressId", keypressId)
