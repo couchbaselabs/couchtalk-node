@@ -168,6 +168,7 @@ ul.messages li img.unplayed {
 
 ul.messages li img.noAudio {
   border: 4px solid #800;
+  background: #000;
 }
 
 .autoplay {
