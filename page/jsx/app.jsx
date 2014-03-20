@@ -44,7 +44,7 @@ var TalkPage = module.exports = React.createClass({
 
     if (message.snap) {
       for (var i = messages.length - 1; i >= 0; i--) {
-        if (messages[i] && messages[i].snap === message.snap) {
+        if (messages[i] && messages[i].snap && messages[i].snap.split(":")[0] === message.snap.split(":")[0]) {
           break;
         }
       }
@@ -95,16 +95,18 @@ var TalkPage = module.exports = React.createClass({
       room : this.props.id
     })
     this.state.recorder.record()
-    // this.takeSnapshot(keypressId)
-    setTimeout(function(){
-      this.takeSnapshot(keypressId)
+    var counter = 0;
+    this.takeSnapshot(keypressId, counter)
+    var interval = setInterval(function(){
+      this.takeSnapshot(keypressId, counter++)
     }.bind(this), 250)
     var video = $("video")
     video.addClass("recording")
     video.data("keypressId", keypressId)
-    this.setState({recording : true});
+    this.setState({recording : true, pictureInterval : interval});
   },
   stopRecord : function() {
+    if (this.state.pictureInterval) clearInterval(this.state.pictureInterval)
     if (!this.state.recording) {
       return console.error("I thought I was recording!")
     }
@@ -123,7 +125,7 @@ var TalkPage = module.exports = React.createClass({
     this.messageWithIdForKeypress(keypressId,
       function(message){
       var reader = new FileReader(),
-        postURL = "/audio/" + this.props.id + "/" + message.snap + "/" + keypressId;
+        postURL = "/audio/" + this.props.id + "/" + message.snap.split(":")[0] + "/" + keypressId;
       if (this.state.selfDestruct) {
         postURL+= "?selfDestruct="+this.state.selfDestructTTL;
       }
@@ -142,13 +144,13 @@ var TalkPage = module.exports = React.createClass({
       reader.readAsDataURL(wav);
     }.bind(this))
   },
-  takeSnapshot : function(keypressId){
+  takeSnapshot : function(keypressId, counter){
     var rootNode = $(this.getDOMNode());
     var canvas = rootNode.find("canvas")[0];
     var video = rootNode.find("video")[0];
     var ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, video.width*2, video.height*2);
-    this.saveSnapshot(canvas.toDataURL("image/jpeg"), keypressId);
+    this.saveSnapshot(canvas.toDataURL("image/jpeg"), keypressId, counter);
   },
   messageForKeypress : function(keypressId, index) {
     var messages = this.state.messages;
@@ -176,12 +178,16 @@ var TalkPage = module.exports = React.createClass({
       cb(message)
     }
   },
-  saveSnapshot : function(png, keypressId){
+  saveSnapshot : function(png, keypressId, counter){
     this.messageWithIdForKeypress(keypressId,
       function(message){
         // console.log("save pic", message)
         var parts = png.split(/[,;:]/),
-          postURL = "/snapshot/" + this.props.id + "/" + message.snap + "/" + keypressId;
+          picId = message.snap.split(":")[0];
+        if (counter) {
+          picId += ":" + counter
+        }
+        var postURL = "/snapshot/" + this.props.id + "/" + picId + "/" + keypressId;
         if (this.state.selfDestruct) {
           postURL+= "?selfDestruct="+this.state.selfDestructTTL;
         }
@@ -413,11 +419,23 @@ var TalkPage = module.exports = React.createClass({
 })
 
 var Message = React.createClass({
+  getInitialState : function(){
+    return {showing : 0}
+  },
   componentDidMount : function(){
     var audio = $(this.getDOMNode()).find("audio")[0];
     audio.addEventListener('ended', function(){
+      this.stopAnimation()
       this.props.playFinished(this.props.message)
     }.bind(this))
+    audio.addEventListener('playing', function(){
+      this.animateImages()
+    }.bind(this))
+    var deck = $(this.getDOMNode()).find("img.ondeck")[0];
+    deck.addEventListener("load", function(e) {
+      // console.log("deck load", this, e)
+      $(this).parent().find("img.messImg")[0].src = this.src;
+    })
   },
 //   shouldComponentUpdate : function(nextProps) {
 //     // console.log(nextProps.message)
@@ -428,18 +446,43 @@ var Message = React.createClass({
 //     }.bind(this)).length !== 0
 // // return true;
 //   },
+  getMax : function(){
+    var split = this.props.message.snap.split(":");
+    if (split[1]) {
+      return parseInt(split[1], 10) || 0;
+    } else { return 0}
+  },
+  getSnapURL : function(){
+    var url = "/snapshot/" + this.props.message.snap.split(":")[0];
+    var number =  this.props.message.audio ? this.state.showing : this.getMax();
+    if (number) {
+      url += ":" + number
+    }
+    return url;
+  },
+  animateImages : function() {
+    var animateHandle = setInterval(function(){
+      this.setState({showing : this.state.showing+1})
+    }.bind(this), 250)
+    this.setState({animateHandle : animateHandle})
+  },
+  stopAnimation: function(){
+    clearInterval(this.state.animateHandle)
+    this.setState({showing : 0})
+  },
   render : function() {
     // console.log("Render", this.props.message)
-    var snapURL
+    var snapURL, backupURL;
     if (this.props.message.image) {
-      snapURL = "/snapshot/" + this.props.message.snap;
+      snapURL = this.getSnapURL();
+      backupURL = "/snapshot/" + this.props.message.snap.split(":")[0];
     }
     var audioURL = "/audio/" + this.props.message.audio;
-    var className = "";
+    var className = "messImg";
 
     if (!this.props.message.audio) {
       if (!this.props.message.join) {
-        className += "noAudio"
+        className += " noAudio"
       }
     } else {
       if (this.props.playing) {
@@ -452,8 +495,9 @@ var Message = React.createClass({
         }
       }
     }
-    return (<li key={this.props.message.keypressId || this.props.message.snap}>
-        <img className={className} src={snapURL} onClick={this.props.playMe}/>
+    return (<li key={this.props.message.keypressId || this.props.message.snap.split(":")[0]}>
+        <img className={className} src={backupURL} onClick={this.props.playMe}/>
+        <img className="ondeck" src={snapURL}/>
         <audio src={audioURL}/>
       </li>)
   }

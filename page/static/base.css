@@ -150,6 +150,10 @@ ul.messages li img {
   height:120px;
 }
 
+img.ondeck {
+  display: none;
+}
+
 ul.messages li img.playing {
   border: 4px solid #0f0;
 }
