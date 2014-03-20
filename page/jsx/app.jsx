@@ -476,10 +476,6 @@ var Message = React.createClass({
     if (this.props.message.image) {
       snapURL = this.getSnapURL();
       backupURL = "/snapshot/" + this.props.message.snap.split(":")[0];
-      var num = parseInt(snapURL.split(":")[1], 10)
-      if (num > 1) {
-        backupURL+=":"+num-1
-      }
     }
     var audioURL = "/audio/" + this.props.message.audio;
     var className = "messImg";
