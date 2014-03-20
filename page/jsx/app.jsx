@@ -29,6 +29,9 @@ var TalkPage = module.exports = React.createClass({
     var socket = io.connect(location.origin)
     socket.on("message", this.gotMessage)
     this.setState({socket : socket})
+    var rooms = this.parseRooms()
+    rooms[this.props.id] = new Date();
+    $.fn.cookie("rooms", JSON.stringify(rooms))
   },
   gotMessage : function(message){
     var messages = this.state.messages;
@@ -308,7 +311,37 @@ var TalkPage = module.exports = React.createClass({
     $.fn.cookie('selfDestruct', e.target.checked.toString(), {path : "/"});
     this.setState({selfDestruct:e.target.checked})
   },
+  parseRooms : function(){
+    var rooms = $.fn.cookie("rooms");
+    if (rooms) {
+      return JSON.parse(rooms)
+    } else {
+      return {}
+    }
+  },
+  clearHistory : function(){
+    $.fn.cookie("rooms", '{}')
+  },
   render : function() {
+    var rooms = this.parseRooms()
+    var recentRooms = [], sortedRooms = [];
+    for (var room in rooms) {
+      if (room !== this.props.id)
+        sortedRooms.push([room, rooms[room]])
+    }
+    sortedRooms.sort(function(a, b) {return new Date(b[1]) - new Date(a[1])})
+    console.log(sortedRooms)
+    if (sortedRooms.length > 0) {
+      recentRooms = <aside>
+        <h4>Recent Rooms <a onClick={this.clearHistory}>(Clear)</a></h4>
+        <ul>{
+          sortedRooms.map(function(room){
+            var href = "/talk/"+room[0]
+            return <li><a href={href}>{room[0]}</a></li>
+          }, this)
+        }</ul>
+      </aside>
+    }
     var url = location.origin + "/talk/" + this.props.id;
     var recording = this.state.recording ?
       <span className="recording">Recording.</span> :
@@ -333,6 +366,8 @@ var TalkPage = module.exports = React.createClass({
 
         <aside>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
         </aside>
+
+        {recentRooms}
 
         <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
           <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>

@@ -53,8 +53,7 @@ p, ul {
 }
 
 ul {
-  padding-left: 0;
-  list-style-type: none;
+  /*list-style-type: none;*/
 }
 
 a {
@@ -134,35 +133,36 @@ video.recording {
 
 ul.messages {
   margin-right: 340px;
-
+  list-style-type: none;
+  padding-left: 0;
 }
 
 
-.room li {
+ul.messages li {
   display: inline-block;
   margin: 0; padding: 4px;
 }
 
-.room li img {
+ul.messages li img {
   border: 4px solid #fff;
   box-sizing: content-box;
   width:160px;
   height:120px;
 }
 
-.room li img.playing {
+ul.messages li img.playing {
   border: 4px solid #0f0;
 }
 
-.room li img.played {
+ul.messages li img.played {
   border: 4px solid #aca;
 }
 
-.room li img.unplayed {
+ul.messages li img.unplayed {
   border: 4px solid #0a0;
 }
 
-.room li img.noAudio {
+ul.messages li img.noAudio {
   border: 4px solid #800;
 }
 
