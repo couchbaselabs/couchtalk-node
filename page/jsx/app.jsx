@@ -25,14 +25,8 @@ var TalkPage = module.exports = React.createClass({
     }
   },
   componentWillMount: function() {
-    this.joinRoom()
-  },
-  joinRoom : function(){
     var socket = io.connect(location.origin)
-
-    // socket.emit("join", {id : this.props.id}) // todo send this with req for first snap id
     socket.on("message", this.gotMessage)
-    socket.on("snap-id", this.gotMessage)
     this.setState({socket : socket})
   },
   gotMessage : function(message){
@@ -208,7 +202,7 @@ var TalkPage = module.exports = React.createClass({
   playMessage : function(i){
     // todo move to message, remove `i`
     var message = this.state.messages[i];
-    if (message) {
+    if (!this.state.recording && message) {
       if (message.audio) {
         var rootNode = $(this.getDOMNode());
         // play the audio from the beginning
@@ -219,7 +213,7 @@ var TalkPage = module.exports = React.createClass({
         message.played = true
         // console.log(audio, audio.ended, audio.networkState)
         setTimeout(function() {
-          console.log(audio, audio.ended, audio.networkState)
+          // console.log(audio, audio.ended, audio.networkState)
           if (audio.networkState != 1) {
             this.playFinished(message)
           }
@@ -324,9 +318,7 @@ var TalkPage = module.exports = React.createClass({
         {beg}
         <video autoPlay width={160} height={120} />
         <canvas style={{display : "none"}} width={320} height={240}/>
-        <p>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
-        </p>
-        <p>Hold down the space bar while you are talking to record.
+        <p><strong>Hold down the space bar</strong> while you are talking to record.
           <em>All messages are public. </em>
         </p>
         <label className="autoplay"><input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/> Auto-play</label> {recording}
@@ -334,6 +326,10 @@ var TalkPage = module.exports = React.createClass({
         <label className="destruct"><input type="checkbox" onChange={this.selfDestructChanged} checked={this.state.selfDestruct}/>Erase my messages after <input type="text" size={4} onChange={this.selfDestructTTLChanged} value={this.state.selfDestructTTL}/> seconds</label>
 
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
+
+        <aside>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
+        </aside>
+
         <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
           <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
       </header>
