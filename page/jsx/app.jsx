@@ -14,13 +14,14 @@ var TalkPage = module.exports = React.createClass({
     id : React.PropTypes.string.isRequired,
   },
   getInitialState : function(){
+    console.log($.fn.cookie("autoplay"), $.fn.cookie("selfDestruct"), $.fn.cookie("selfDestructTTL"))
     return {
       recording: false,
       messages : [],
       session : "s:"+Math.random().toString(20),
-      autoplay : true,
-      selfDestructTTL : 300,
-      selfDestruct : false,
+      autoplay : $.fn.cookie('autoplay') !== "false",
+      selfDestructTTL : $.fn.cookie('selfDestructTTL') || 300,
+      selfDestruct : $.fn.cookie('selfDestruct') === "true",
       nowPlaying : false,
     }
   },
@@ -250,6 +251,7 @@ var TalkPage = module.exports = React.createClass({
     video.src = window.URL.createObjectURL(recorder.stream)
   },
   autoPlayChanged : function(e){
+    $.fn.cookie('autoplay', e.target.checked.toString(), {path : "/"});
     this.setState({autoplay: e.target.checked})
   },
   loadEarlierMessages : function(e){
@@ -299,9 +301,11 @@ var TalkPage = module.exports = React.createClass({
     if (el) {el.scrollIntoView(true)}
   },
   selfDestructTTLChanged : function(e) {
+    $.fn.cookie('selfDestructTTL', e.target.value, {path : "/"});
     this.setState({selfDestructTTL:e.target.value})
   },
   selfDestructChanged : function(e) {
+    $.fn.cookie('selfDestruct', e.target.checked.toString(), {path : "/"});
     this.setState({selfDestruct:e.target.checked})
   },
   render : function() {
