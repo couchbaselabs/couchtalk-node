@@ -15,14 +15,19 @@ var TalkPage = module.exports = React.createClass({
   },
   getInitialState : function(){
     console.log($.fn.cookie("autoplay"), $.fn.cookie("selfDestruct"), $.fn.cookie("selfDestructTTL"))
+    var start = getQueryVariable("start");
+    var end = getQueryVariable("end");
+    // console.log(start, end)
     return {
       recording: false,
       messages : [],
       session : "s:"+Math.random().toString(20),
       autoplay : $.fn.cookie('autoplay') !== "false",
-      selfDestructTTL : $.fn.cookie('selfDestructTTL') || 300,
+      selfDestructTTL : parseInt($.fn.cookie('selfDestructTTL'), 10) || 300,
       selfDestruct : $.fn.cookie('selfDestruct') === "true",
       nowPlaying : false,
+      start : parseInt(start, 10),
+      end : parseInt(end, 10)
     }
   },
   componentWillMount: function() {
@@ -257,7 +262,20 @@ var TalkPage = module.exports = React.createClass({
     $.fn.cookie('autoplay', e.target.checked.toString(), {path : "/"});
     this.setState({autoplay: e.target.checked})
   },
-  loadEarlierMessages : function(e){
+  loadConversation : function(start, end){
+    console.log("conversation view", start, end)
+    var room = this.props.id,
+      oldMessages = [], min = Math.min(start, end);
+    for (var i = end; i >= start; i--) {
+      oldMessages.unshift({
+        snap : ["snap",room,i].join("-"),
+        audio : ["snap",room,i,"audio"].join("-"),
+        image : true
+      })
+    }
+    this.setState({messages : oldMessages.concat(this.state.messages)})
+  },
+  loadEarlierMessages : function(start, end){
     var room = this.props.id, oldest = this.state.messages[0],
       before;
     if (oldest && oldest.snap) {
@@ -274,6 +292,9 @@ var TalkPage = module.exports = React.createClass({
     this.setState({messages : oldMessages.concat(this.state.messages)})
   },
   componentDidMount : function(rootNode){
+    if (this.state.start && this.state.end) {
+      this.loadConversation(this.state.start, this.state.end)
+    }
     connectAudio(function(error, recorder) {
       if (error) {return reloadError(error)}
       this.setupAudioVideo(rootNode, recorder)
@@ -284,6 +305,9 @@ var TalkPage = module.exports = React.createClass({
         room : this.props.id,
         join : true
       })
+      if (this.state.start && this.state.end && this.state.autoplay) {
+        this.playMessage(0)
+      }
       setTimeout(function(){
         this.takeSnapshot(this.state.session)
       }.bind(this), 1000)
@@ -330,7 +354,7 @@ var TalkPage = module.exports = React.createClass({
         sortedRooms.push([room, rooms[room]])
     }
     sortedRooms.sort(function(a, b) {return new Date(b[1]) - new Date(a[1])})
-    console.log(sortedRooms)
+    // console.log(sortedRooms)
     if (sortedRooms.length > 0) {
       recentRooms = <aside>
         <h4>Recent Rooms <a onClick={this.clearHistory}>(Clear)</a></h4>
@@ -443,5 +467,16 @@ function reloadError(error) {
     },200)
   } else {
     $("h2").html('CouchTalk requires Firefox or Chrome!')
+  }
+}
+
+function getQueryVariable(variable) {
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  for (var i=0; i < vars.length; i++) {
+    var pair = vars[i].split("=");
+    if (pair[0] == variable) {
+      return pair[1];
+    }
   }
 }
