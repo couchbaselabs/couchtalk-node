@@ -462,12 +462,7 @@ var Message = React.createClass({
   },
   animateImages : function() {
     var animateHandle = setInterval(function(){
-      if (this.props.message.audio && this.state.showing > this.getMax()) {
-        clearInterval(animateHandle)
-        this.setState({showing : 0})
-      } else {
-        this.setState({showing : this.state.showing+1})
-      }
+      this.setState({showing : this.state.showing+1})
     }.bind(this), 250)
     this.setState({animateHandle : animateHandle})
   },
