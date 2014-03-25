@@ -115,6 +115,8 @@ var TalkPage = module.exports = React.createClass({
       recorder = this.state.recorder;
     recorder.stop()
     video.removeClass("recording");
+    var message = this.messageForKeypress(keypressId);
+    delete message.snapdata;
 
     recorder.exportMonoWAV(this.saveAudio.bind(this, keypressId))
     recorder.clear()
@@ -179,6 +181,10 @@ var TalkPage = module.exports = React.createClass({
     }
   },
   saveSnapshot : function(png, keypressId, counter){
+    // make locally available before saved on server
+    var message = this.messageForKeypress(keypressId);
+    message.snapdata = png;
+    // save on server as soon as we have an id
     this.messageWithIdForKeypress(keypressId,
       function(message){
         // console.log("save pic", message)
@@ -453,6 +459,9 @@ var Message = React.createClass({
     } else { return 0}
   },
   getSnapURL : function(){
+    if (this.props.message.snapdata) {
+      return this.props.message.snapdata;
+    }
     var url = "/snapshot/" + this.props.message.snap.split(":")[0];
     var number =  this.props.message.audio ? this.state.showing : this.getMax();
     if (number) {
