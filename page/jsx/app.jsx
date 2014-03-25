@@ -14,7 +14,7 @@ var TalkPage = module.exports = React.createClass({
     id : React.PropTypes.string.isRequired,
   },
   getInitialState : function(){
-    console.log($.fn.cookie("autoplay"), $.fn.cookie("selfDestruct"), $.fn.cookie("selfDestructTTL"))
+    // console.log($.fn.cookie("autoplay"), $.fn.cookie("selfDestruct"), $.fn.cookie("selfDestructTTL"))
     var start = getQueryVariable("start");
     var end = getQueryVariable("end");
     // console.log(start, end)
@@ -40,7 +40,7 @@ var TalkPage = module.exports = React.createClass({
   },
   gotMessage : function(message){
     var messages = this.state.messages;
-    console.log("message", message, messages.length)
+    // console.log("message", message, messages.length)
 
     if (message.snap) {
       for (var i = messages.length - 1; i >= 0; i--) {
@@ -173,7 +173,7 @@ var TalkPage = module.exports = React.createClass({
   },
   messageForKeypress : function(keypressId, index) {
     var messages = this.state.messages;
-    console.log('messageForKeypress', keypressId, messages)
+    // console.log('messageForKeypress', keypressId, messages)
     for (var i = messages.length - 1; i >= 0; i--) {
       var m = messages[i];
       if (m.keypressId == keypressId) {
@@ -202,13 +202,13 @@ var TalkPage = module.exports = React.createClass({
     var findIndex = {}
     var existingMessage = this.messageForKeypress(keypressId, findIndex);
     if (existingMessage) {
-      console.log("update local snapshot", existingMessage)
+      // console.log("update local snapshot", existingMessage)
       messages[findIndex.i].snapdata = png;
       this.setState({messages : messages});
     } else {
       var newMessage = {keypressId : keypressId, snapdata : png}
       messages.push(newMessage)
-      console.log("save new local snapshot", newMessage)
+      // console.log("save new local snapshot", newMessage)
       this.setState({messages : messages});
     }
   },
