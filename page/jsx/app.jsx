@@ -52,14 +52,29 @@ var TalkPage = module.exports = React.createClass({
         // exists in some form
         $.extend(messages[i], message)
       } else {
-        // first time, add it
-        messages.push(message)
-        i = messages.length-1;
+        // check to see if there's a message with the keypress
+        if (message.keypressId) {
+          var findIndex = {};
+          this.messageForKeypress(message.keypressId, findIndex)
+          if (findIndex.i) {
+            $.extend(messages[findIndex.i], message)
+            i = findIndex.i
+          } else {
+            // first time, add it
+            messages.push(message)
+            i = messages.length-1;
+          }
+        } else {
+          // first time, add it
+          messages.push(message)
+          i = messages.length-1;
+        }
+
       }
       this.setState({messages : messages})
       this.maybePlay(messages[i], i)
     } else {
-      // console.log("no snap field", message)
+      // console.log("no snap only keypressId", message)
     }
   },
   maybePlay : function(message, i) {
@@ -89,11 +104,6 @@ var TalkPage = module.exports = React.createClass({
   startRecord : function(keypressId) {
     if (this.state.recording) return;
     // console.log("startRecord",keypressId)
-    this.state.socket.emit("new-snap", {
-      keypressId : keypressId,
-      session : this.state.session,
-      room : this.props.id
-    })
     this.state.recorder.record()
     var counter = 0;
     this.takeSnapshot(keypressId, counter)
@@ -104,6 +114,11 @@ var TalkPage = module.exports = React.createClass({
     video.addClass("recording")
     video.data("keypressId", keypressId)
     this.setState({recording : true, pictureInterval : interval});
+    this.state.socket.emit("new-snap", {
+      keypressId : keypressId,
+      session : this.state.session,
+      room : this.props.id
+    })
   },
   stopRecord : function() {
     if (this.state.pictureInterval) clearInterval(this.state.pictureInterval)
@@ -116,7 +131,9 @@ var TalkPage = module.exports = React.createClass({
     recorder.stop()
     video.removeClass("recording");
     var message = this.messageForKeypress(keypressId);
-    delete message.snapdata;
+    if (message) {
+      delete message.snapdata;
+    }
 
     recorder.exportMonoWAV(this.saveAudio.bind(this, keypressId))
     recorder.clear()
@@ -156,6 +173,7 @@ var TalkPage = module.exports = React.createClass({
   },
   messageForKeypress : function(keypressId, index) {
     var messages = this.state.messages;
+    console.log('messageForKeypress', keypressId, messages)
     for (var i = messages.length - 1; i >= 0; i--) {
       var m = messages[i];
       if (m.keypressId == keypressId) {
@@ -163,12 +181,11 @@ var TalkPage = module.exports = React.createClass({
         return m;
       }
     }
-    return {keypressId : keypressId};
   },
   messageWithIdForKeypress : function(keypressId, cb, retries){
     var message = this.messageForKeypress(keypressId);
     retries = retries || 0;
-    if (!message.snap) { // we haven't got the id via socket.io
+    if (!(message && message.snap)) { // we haven't got the id via socket.io
       if (retries < 100) {
         // console.log("wait for snap id for", keypressId, message, retries)
         setTimeout(this.messageWithIdForKeypress.bind(this,
@@ -180,10 +197,25 @@ var TalkPage = module.exports = React.createClass({
       cb(message)
     }
   },
+  saveLocalSnapshot : function(png, keypressId){
+    var messages = this.state.messages;
+    var findIndex = {}
+    var existingMessage = this.messageForKeypress(keypressId, findIndex);
+    if (existingMessage) {
+      console.log("update local snapshot", existingMessage)
+      messages[findIndex.i].snapdata = png;
+      this.setState({messages : messages});
+    } else {
+      var newMessage = {keypressId : keypressId, snapdata : png}
+      messages.push(newMessage)
+      console.log("save new local snapshot", newMessage)
+      this.setState({messages : messages});
+    }
+  },
   saveSnapshot : function(png, keypressId, counter){
     // make locally available before saved on server
-    var message = this.messageForKeypress(keypressId);
-    message.snapdata = png;
+    this.saveLocalSnapshot(png, keypressId)
+
     // save on server as soon as we have an id
     this.messageWithIdForKeypress(keypressId,
       function(message){
@@ -459,9 +491,6 @@ var Message = React.createClass({
     } else { return 0}
   },
   getSnapURL : function(){
-    if (this.props.message.snapdata) {
-      return this.props.message.snapdata;
-    }
     var url = "/snapshot/" + this.props.message.snap.split(":")[0];
     var number =  this.props.message.audio ? this.state.showing : this.getMax();
     if (number) {
@@ -485,6 +514,9 @@ var Message = React.createClass({
     if (this.props.message.image) {
       snapURL = this.getSnapURL();
       backupURL = "/snapshot/" + this.props.message.snap.split(":")[0];
+    }
+    if (this.props.message.snapdata) {
+      snapURL = this.props.message.snapdata;
     }
     var audioURL = "/audio/" + this.props.message.audio;
     var className = "messImg";
