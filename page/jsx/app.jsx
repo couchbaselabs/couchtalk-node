@@ -426,6 +426,11 @@ var
 
 
 var RecentRooms = React.createClass({
+  getInitialState : function(){
+    return {
+      sortedRooms : this.sortedRooms()
+    }
+  },
   parseRooms : function(){
     var rooms = $.fn.cookie("rooms");
     if (rooms) {
@@ -436,36 +441,38 @@ var RecentRooms = React.createClass({
   },
   sortedRooms : function() {
     var rooms = this.parseRooms()
-    var recentRooms = [], sortedRooms = [];
+    var sortedRooms = [];
     for (var room in rooms) {
       if (room !== this.props.id)
         sortedRooms.push([room, new Date(rooms[room])])
     }
     if (sortedRooms.length > 0) {
       sortedRooms.sort(function(a, b) {return b[1] - a[1]})
+      console.log("sortedRooms", sortedRooms)
       return sortedRooms;
     }
   },
   clearHistory : function(){
     $.fn.cookie("rooms", '{}', {path : "/"})
+    this.setState({sortedRooms : this.sortedRooms()})
   },
-  componentWillMount : function(){
+  componentDidMount : function(){
     if (this.props.id) {
       var rooms = this.parseRooms()
-      console.log("parseRooms")
+      console.log("parseRooms", rooms)
       rooms[this.props.id] = new Date();
       $.fn.cookie("rooms", JSON.stringify(rooms), {path : "/"})
     }
   },
   render : function(){
-    var sortedRooms = this.sortedRooms();
-    if (sortedRooms) {
+    if (this.state.sortedRooms) {
       return <aside>
         <h4>Recent Rooms <a onClick={this.clearHistory}>(Clear)</a></h4>
         <ul>{
-          sortedRooms.map(function(room){
+          this.state.sortedRooms.map(function(room){
+            console.log(room[0], room[1])
             var href = "/talk/"+room[0]
-            return <li><a href={href}>{room[0]} - {room[1]}</a></li>
+            return <li key={room[0]}><a href={href}>{room[0]}</a></li>
           }, this)
         }</ul>
       </aside>
@@ -476,26 +483,29 @@ var RecentRooms = React.createClass({
 })
 
 exports.Index = React.createClass({
-  componentDidMount : function(){
-    $("form input[type=text]").val(Math.random().toString(26).substr(2))
-    $("form").on("submit", function(e){
-      e.preventDefault();
-      var room = $("form input[type=text]").val();
-      document.location = "/talk/" + room;
-    })
+  getInitialState : function(){
+    return {goRoom : Math.random().toString(26).substr(2)}
+  },
+  onSubmit : function(e){
+    e.preventDefault();
+    document.location = "/talk/" + this.state.goRoom;
+  },
+  handleChange : function(e){
+    this.setState({goRoom: e.target.value});
   },
   render : function(){
-    return <div id="splash">
-      <h2>Welcome to CouchTalk</h2>
-      <p>Enter the name of a room to join:
-        <form>
-          <input type="text" size={40}/>
-          <button>Join</button>
-        </form>
-      </p>
-      <img src="/splash.jpg"/>
-      <RecentRooms/>
-    </div>
+    return (<div id="splash">
+          <h2>Welcome to CouchTalk</h2>
+          <p>Enter the name of a room to join:</p>
+          <form onSubmit={this.onSubmit}>
+            <input type="text" size={40}
+            value={this.state.goRoom}
+            onChange={this.handleChange}/>
+            <button type="submit">Join</button>
+          </form>
+          <img src="/splash.jpg"/>
+          <RecentRooms/>
+        </div>)
   }
 })
 

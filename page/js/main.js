@@ -9,7 +9,7 @@ $(function () {
       document.getElementById('container')
     );
   } else {
-    React.renderComponent(CouchTalk.Index(),
+    React.renderComponent(CouchTalk.Index({}),
       document.getElementById("container"))
   }
 })
