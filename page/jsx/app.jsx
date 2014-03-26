@@ -9,7 +9,7 @@ var
   connectAudio = require("../js/recorder").connectAudio,
   getUserMedia = require("getusermedia");
 
-var TalkPage = module.exports = React.createClass({
+  module.exports.App = React.createClass({
   propTypes : {
     id : React.PropTypes.string.isRequired,
   },
@@ -34,9 +34,6 @@ var TalkPage = module.exports = React.createClass({
     var socket = io.connect(location.origin)
     socket.on("message", this.gotMessage)
     this.setState({socket : socket})
-    var rooms = this.parseRooms()
-    rooms[this.props.id] = new Date();
-    $.fn.cookie("rooms", JSON.stringify(rooms))
   },
   gotMessage : function(message){
     var messages = this.state.messages;
@@ -379,48 +376,19 @@ var TalkPage = module.exports = React.createClass({
     $.fn.cookie('selfDestruct', e.target.checked.toString(), {path : "/"});
     this.setState({selfDestruct:e.target.checked})
   },
-  parseRooms : function(){
-    var rooms = $.fn.cookie("rooms");
-    if (rooms) {
-      return JSON.parse(rooms)
-    } else {
-      return {}
-    }
-  },
-  clearHistory : function(){
-    $.fn.cookie("rooms", '{}')
-  },
   render : function() {
-    var rooms = this.parseRooms()
-    var recentRooms = [], sortedRooms = [];
-    for (var room in rooms) {
-      if (room !== this.props.id)
-        sortedRooms.push([room, rooms[room]])
-    }
-    sortedRooms.sort(function(a, b) {return new Date(b[1]) - new Date(a[1])})
-    // console.log(sortedRooms)
-    if (sortedRooms.length > 0) {
-      recentRooms = <aside>
-        <h4>Recent Rooms <a onClick={this.clearHistory}>(Clear)</a></h4>
-        <ul>{
-          sortedRooms.map(function(room){
-            var href = "/talk/"+room[0]
-            return <li><a href={href}>{room[0]}</a></li>
-          }, this)
-        }</ul>
-      </aside>
-    }
     var url = location.origin + "/talk/" + this.props.id;
     var recording = this.state.recording ?
       <span className="recording">Recording.</span> :
       <span/>;
     var oldestKnownMessage = this.state.messages[0];
     document.title = this.props.id + " - CouchTalk"
-    var beg = this.state.recorder ? "" : <h2>Allow Video? &uArr;</h2>;
+    var beg = this.state.recorder ? "" : <h2>Smile! &uArr;</h2>;
     return (
       <div className="room">
       <header>
         {beg}
+        <h4>Push to Talk <a href="http://www.couchbase.com/">Couchbase Demo</a></h4>
         <video autoPlay width={160} height={120} />
         <canvas style={{display : "none"}} width={320} height={240}/>
         <p><strong>Hold down the space bar</strong> while you are talking to record.
@@ -435,7 +403,7 @@ var TalkPage = module.exports = React.createClass({
         <aside>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
         </aside>
 
-        {recentRooms}
+        <RecentRooms id={this.props.id}/>
 
         <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
           <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
@@ -455,6 +423,82 @@ var TalkPage = module.exports = React.createClass({
       );
   }
 })
+
+
+var RecentRooms = React.createClass({
+  parseRooms : function(){
+    var rooms = $.fn.cookie("rooms");
+    if (rooms) {
+      return JSON.parse(rooms)
+    } else {
+      return {}
+    }
+  },
+  sortedRooms : function() {
+    var rooms = this.parseRooms()
+    var recentRooms = [], sortedRooms = [];
+    for (var room in rooms) {
+      if (room !== this.props.id)
+        sortedRooms.push([room, new Date(rooms[room])])
+    }
+    if (sortedRooms.length > 0) {
+      sortedRooms.sort(function(a, b) {return b[1] - a[1]})
+      return sortedRooms;
+    }
+  },
+  clearHistory : function(){
+    $.fn.cookie("rooms", '{}', {path : "/"})
+  },
+  componentWillMount : function(){
+    if (this.props.id) {
+      var rooms = this.parseRooms()
+      console.log("parseRooms")
+      rooms[this.props.id] = new Date();
+      $.fn.cookie("rooms", JSON.stringify(rooms), {path : "/"})
+    }
+  },
+  render : function(){
+    var sortedRooms = this.sortedRooms();
+    if (sortedRooms) {
+      return <aside>
+        <h4>Recent Rooms <a onClick={this.clearHistory}>(Clear)</a></h4>
+        <ul>{
+          sortedRooms.map(function(room){
+            var href = "/talk/"+room[0]
+            return <li><a href={href}>{room[0]} - {room[1]}</a></li>
+          }, this)
+        }</ul>
+      </aside>
+    } else {
+      return <aside/>
+    }
+  },
+})
+
+exports.Index = React.createClass({
+  componentDidMount : function(){
+    $("form input[type=text]").val(Math.random().toString(26).substr(2))
+    $("form").on("submit", function(e){
+      e.preventDefault();
+      var room = $("form input[type=text]").val();
+      document.location = "/talk/" + room;
+    })
+  },
+  render : function(){
+    return <div id="splash">
+      <h2>Welcome to CouchTalk</h2>
+      <p>Enter the name of a room to join:
+        <form>
+          <input type="text" size={40}/>
+          <button>Join</button>
+        </form>
+      </p>
+      <img src="/splash.jpg"/>
+      <RecentRooms/>
+    </div>
+  }
+})
+
 
 var Message = React.createClass({
   getInitialState : function(){

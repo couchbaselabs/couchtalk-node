@@ -110,6 +110,7 @@ header {
 header h2 {
   text-align: right;
   color: #ffac35;
+  margin-right: 1em;
 }
 
 aside{
