@@ -103,8 +103,14 @@ header {
   position: fixed;
   top: 0;
   right: 0;
-  width: 340px;
-  padding:5px;
+  width: 400px;
+  padding:6px;
+  border-left: 4px dotted #f4f2f7;
+  background: #fff;
+}
+
+header h4 {
+  clear:left;
 }
 
 header h2 {
@@ -126,6 +132,9 @@ aside{
 video {
   border: 4px solid #000;
   box-sizing: content-box;
+  float: left;
+  margin-right: 12px;
+  margin-bottom: 12px;
 }
 
 video.recording {
@@ -133,7 +142,7 @@ video.recording {
 }
 
 ul.messages {
-  margin-right: 340px;
+  margin-right: 400px;
   list-style-type: none;
   padding-left: 0;
 }

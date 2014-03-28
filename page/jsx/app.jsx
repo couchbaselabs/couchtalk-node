@@ -388,15 +388,17 @@ var
       <div className="room">
       <header>
         {beg}
-        <h4>Push to Talk <a href="http://www.couchbase.com/">Couchbase Demo</a></h4>
         <video autoPlay width={160} height={120} />
         <canvas style={{display : "none"}} width={320} height={240}/>
-        <p><strong>Hold down the space bar</strong> while you are talking to record.
-          <em>All messages are public. </em>
-        </p>
         <label className="autoplay"><input type="checkbox" onChange={this.autoPlayChanged} checked={this.state.autoplay}/> Auto-play</label> {recording}
         <br/>
         <label className="destruct"><input type="checkbox" onChange={this.selfDestructChanged} checked={this.state.selfDestruct}/>Erase my messages after <input type="text" size={4} onChange={this.selfDestructTTLChanged} value={this.state.selfDestructTTL}/> seconds</label>
+
+        <h4>Push to Talk <a href="http://www.couchbase.com/">Couchbase Demo</a></h4>
+        <p><strong>Hold down the space bar</strong> while you are talking to record.
+          <em>All messages are public. </em>
+        </p>
+
 
         {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
 
