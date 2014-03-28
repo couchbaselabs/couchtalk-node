@@ -450,7 +450,7 @@ var RecentRooms = React.createClass({
     }
     if (sortedRooms.length > 0) {
       sortedRooms.sort(function(a, b) {return b[1] - a[1]})
-      console.log("sortedRooms", sortedRooms)
+      // console.log("sortedRooms", sortedRooms)
       return sortedRooms;
     }
   },
@@ -461,7 +461,7 @@ var RecentRooms = React.createClass({
   componentDidMount : function(){
     if (this.props.id) {
       var rooms = this.parseRooms()
-      console.log("parseRooms", rooms)
+      // console.log("parseRooms", rooms)
       rooms[this.props.id] = new Date();
       $.fn.cookie("rooms", JSON.stringify(rooms), {path : "/"})
     }
@@ -472,7 +472,6 @@ var RecentRooms = React.createClass({
         <h4>Recent Rooms <a onClick={this.clearHistory}>(Clear)</a></h4>
         <ul>{
           this.state.sortedRooms.map(function(room){
-            console.log(room[0], room[1])
             var href = "/talk/"+room[0]
             return <li key={room[0]}><a href={href}>{room[0]}</a></li>
           }, this)
