@@ -513,7 +513,7 @@ exports.Index = React.createClass({
 
 var Message = React.createClass({
   getInitialState : function(){
-    return {showing : 0}
+    return {showing : 0, previous : 0}
   },
   componentDidMount : function(){
     var audio = $(this.getDOMNode()).find("audio")[0];
@@ -545,13 +545,21 @@ var Message = React.createClass({
       return parseInt(split[1], 10) || 0;
     } else { return 0}
   },
-  getSnapURL : function(){
+  getSnapURLs : function(){
     var url = "/snapshot/" + this.props.message.snap.split(":")[0];
     var number =  this.props.message.audio ? this.state.showing : this.getMax();
+    var oldURL = url, oldURLNum;
     if (number) {
+      oldURLNum = number - 1;
       url += ":" + number
+      if (oldURLNum) {
+        oldURL += ":" + oldURLNum
+      }
     }
-    return url;
+    return {
+      now : url,
+      prev : oldURL
+    };
   },
   animateImages : function() {
     var animateHandle = setInterval(function(){
@@ -565,10 +573,11 @@ var Message = React.createClass({
   },
   render : function() {
     // console.log("Render", this.props.message)
-    var snapURL, backupURL;
+    var snapURL, backupURL, snapURLs;
     if (this.props.message.image) {
-      snapURL = this.getSnapURL();
-      backupURL = "/snapshot/" + this.props.message.snap.split(":")[0];
+      snapURLs = this.getSnapURLs();
+      backupURL = snapURLs.prev;
+      snapURL =  snapURLs.now;
     }
     if (this.props.message.snapdata) {
       snapURL = this.props.message.snapdata;
