@@ -113,17 +113,25 @@ var
     var counter = 0;
     this.takeSnapshot(keypressId, counter)
     var interval = setInterval(function(){
-      this.takeSnapshot(keypressId, counter++)
+      this.takeSnapshot(keypressId, ++counter)
     }.bind(this), 250)
     var video = $("video")
     video.addClass("recording")
     video.data("keypressId", keypressId)
     this.setState({recording : true, pictureInterval : interval});
-    this.publishMessage({
-      keypressId : keypressId,
-      session : this.state.session,
-      room : this.props.id,
-      "new-snap" : true
+
+    $.ajax({
+      type : "POST",
+      url : "/next/"+this.props.id,
+      success : function(data) {
+        // console.log("saved audio", message)
+        this.gotMessage({
+          keypressId : keypressId,
+          session : this.state.session,
+          room : this.props.id,
+          snap : data.snap
+        })
+      }.bind(this)
     })
   },
   stopRecord : function() {
@@ -161,9 +169,14 @@ var
           url : postURL,
           contentType : parts[1],
           data : parts[3],
-          success : function() {
+          success : function(data) {
             // console.log("saved audio", message)
-          }
+            this.publishMessage({
+              keypressId : keypressId,
+              snap : message.snap.split(":")[0],
+              audio : data.id
+            })
+          }.bind(this)
         })
       }.bind(this));
       reader.readAsDataURL(wav);
@@ -241,8 +254,9 @@ var
           contentType : parts[1],
           data : parts[3],
           success : function(data) {
-            // console.log("saved snap", message)
-          }
+            // console.log("saved snap", data)
+            this.publishMessage({snap : picId, keypressId : keypressId, image : true})
+          }.bind(this)
         })
     }.bind(this))
   },
@@ -351,7 +365,7 @@ var
     this.state.pubnub.subscribe({
       channel: this.props.id,
       callback: function (message) {
-        console.log("pubnub", message);
+        // console.log("pubnub", message);
         this.gotMessage(message)
       }.bind(this),
       connect: function () {
