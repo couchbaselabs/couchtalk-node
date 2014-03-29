@@ -2,7 +2,7 @@
  * @jsx React.DOM
  */
  /* global $ */
- /* global io */
+ /* global PUBNUB */
 
 
 var
@@ -31,9 +31,17 @@ var
     }
   },
   componentWillMount: function() {
-    var socket = io.connect(location.origin)
-    socket.on("message", this.gotMessage)
-    this.setState({socket : socket})
+    // var socket = io.connect(location.origin)
+    // socket.on("message", this.gotMessage)
+    // this.setState({socket : socket})
+
+    var pubnub = PUBNUB.init({
+      publish_key: 'pub-c-70e08867-b33a-4375-8ce4-47048abcb7c8',
+      subscribe_key: 'sub-c-950ffe0a-b6b1-11e3-87c4-02ee2ddab7fe'
+    });
+    this.setState({pubnub : pubnub})
+
+
   },
   gotMessage : function(message){
     var messages = this.state.messages;
@@ -111,10 +119,11 @@ var
     video.addClass("recording")
     video.data("keypressId", keypressId)
     this.setState({recording : true, pictureInterval : interval});
-    this.state.socket.emit("new-snap", {
+    this.publishMessage({
       keypressId : keypressId,
       session : this.state.session,
-      room : this.props.id
+      room : this.props.id,
+      "new-snap" : true
     })
   },
   stopRecord : function() {
@@ -332,6 +341,29 @@ var
     }
     this.setState({messages : oldMessages.concat(this.state.messages)})
   },
+  publishMessage : function(message){
+    this.state.pubnub.publish({
+      channel: this.props.id,
+      message: message
+    });
+  },
+  connnectPubNub : function(){
+    this.state.pubnub.subscribe({
+      channel: this.props.id,
+      callback: function (message) {
+        console.log("pubnub", message);
+        this.gotMessage(message)
+      }.bind(this),
+      connect: function () {
+        this.publishMessage({
+          keypressId : this.state.session,
+          session : this.state.session,
+          room : this.props.id,
+          "join" : true
+        })
+      }.bind(this)
+    });
+  },
   componentDidMount : function(rootNode){
     if (this.state.start && this.state.end) {
       this.loadConversation(this.state.start, this.state.end)
@@ -340,12 +372,8 @@ var
       if (error) {return reloadError(error)}
       this.setupAudioVideo(rootNode, recorder)
       this.listenForSpaceBar()
-      this.state.socket.emit("join", {
-        keypressId : this.state.session,
-        session : this.state.session,
-        room : this.props.id,
-        join : true
-      })
+      this.connnectPubNub()
+
       if (this.state.start && this.state.end && this.state.autoplay) {
         this.playMessage(0)
       }
@@ -381,7 +409,8 @@ var
     var recording = this.state.recording ?
       <span className="recording">Recording.</span> :
       <span/>;
-    var oldestKnownMessage = this.state.messages[0];
+    var okm = this.state.messages[0],
+      oldestKnownMessage = (okm && okm.snap && okm.snap.split('-')[2] !== '0');
     document.title = this.props.id + " - CouchTalk"
     var beg = this.state.recorder ? "" : <h2>Smile! &uArr;</h2>;
     return (
@@ -400,7 +429,7 @@ var
         </p>
 
 
-        {(oldestKnownMessage && oldestKnownMessage.snap.split('-')[2] !== '0') && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
+        {oldestKnownMessage && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
 
         <aside>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
         </aside>
