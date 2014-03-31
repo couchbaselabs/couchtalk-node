@@ -4,6 +4,21 @@
  /* global $ */
  /* global PUBNUB */
 
+ if (!Array.prototype.find) {
+   Object.defineProperty(Array.prototype, 'find', {
+     enumerable: false,
+     configurable: false,
+     writable: false,
+     value: function(predicate) {
+       for (var i=0; i < this.length; i++) {
+         if (predicate(this[i], i, this)) {
+           return this[i];
+         }
+       }
+       return void 0;
+     }
+   });
+ }
 
 var
   connectAudio = require("../js/recorder").connectAudio,
@@ -125,7 +140,7 @@ var
       url : "/next/"+this.props.id,
       success : function(data) {
         // console.log("saved audio", message)
-        this.gotMessage({
+        this.publishMessage({
           keypressId : keypressId,
           session : this.state.session,
           room : this.props.id,
@@ -255,7 +270,11 @@ var
           data : parts[3],
           success : function(data) {
             // console.log("saved snap", data)
-            this.publishMessage({snap : picId, keypressId : keypressId, image : true})
+            var publish = {snap : picId, keypressId : keypressId, image : true}
+            if (this.state.session == keypressId) {
+              publish.join = true;
+            }
+            this.publishMessage(publish)
           }.bind(this)
         })
     }.bind(this))
@@ -339,8 +358,11 @@ var
     }
     this.setState({messages : oldMessages.concat(this.state.messages)})
   },
+  oldestKnownMessage : function(){
+    return this.state.messages.find(function(m){return m.snap});
+  },
   loadEarlierMessages : function(start, end){
-    var room = this.props.id, oldest = this.state.messages[0],
+    var room = this.props.id, oldest = this.oldestKnownMessage(),
       before;
     if (oldest && oldest.snap) {
       before = parseInt(oldest.snap.split('-')[2], 10)
@@ -356,6 +378,7 @@ var
     this.setState({messages : oldMessages.concat(this.state.messages)})
   },
   publishMessage : function(message){
+    console.log("publish", message, this.props.id)
     this.state.pubnub.publish({
       channel: this.props.id,
       message: message
@@ -369,12 +392,30 @@ var
         this.gotMessage(message)
       }.bind(this),
       connect: function () {
-        this.publishMessage({
-          keypressId : this.state.session,
-          session : this.state.session,
-          room : this.props.id,
-          "join" : true
+        $.ajax({
+          type : "POST",
+          url : "/next/"+this.props.id,
+          success : function(data) {
+            // console.log("saved audio", message)
+            this.gotMessage({
+              keypressId : this.state.session,
+              session : this.state.session,
+              room : this.props.id,
+              snap : data.snap,
+              "join" : true
+            })
+          }.bind(this)
         })
+
+        // this.gotMessage({
+        //   keypressId : this.state.session,
+        //   session : this.state.session,
+        //   room : this.props.id,
+        //   "join" : true
+        // })
+        setTimeout(function(){
+          this.takeSnapshot(this.state.session)
+        }.bind(this), 1000)
       }.bind(this)
     });
   },
@@ -391,9 +432,7 @@ var
       if (this.state.start && this.state.end && this.state.autoplay) {
         this.playMessage(0)
       }
-      setTimeout(function(){
-        this.takeSnapshot(this.state.session)
-      }.bind(this), 1000)
+
       this.setState({recorder: recorder})
     }.bind(this))
   },
@@ -423,8 +462,9 @@ var
     var recording = this.state.recording ?
       <span className="recording">Recording.</span> :
       <span/>;
-    var okm = this.state.messages[0],
-      oldestKnownMessage = (okm && okm.snap && okm.snap.split('-')[2] !== '0');
+    var okm = this.oldestKnownMessage();
+      // oldestKnownMessage = (okm && okm.snap.split('-')[2] !== '0');
+    // console.log("okm", this.oldestKnownMessage(), okm)
     document.title = this.props.id + " - CouchTalk"
     var beg = this.state.recorder ? "" : <h2>Smile! &uArr;</h2>;
     return (
@@ -442,8 +482,7 @@ var
           <em>All messages are public. </em>
         </p>
 
-
-        {oldestKnownMessage && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
+        {okm && <p><a onClick={this.loadEarlierMessages}>Load earlier messages.</a></p>}
 
         <aside>Invite people to join the conversation: <input className="shareLink" value={url}/> or <a href="/">Go to a new room.</a>
         </aside>
