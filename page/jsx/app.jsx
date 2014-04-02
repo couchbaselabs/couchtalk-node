@@ -477,7 +477,7 @@ var
         <br/>
         <label className="destruct"><input type="checkbox" onChange={this.selfDestructChanged} checked={this.state.selfDestruct}/>Erase my messages after <input type="text" size={4} onChange={this.selfDestructTTLChanged} value={this.state.selfDestructTTL}/> seconds</label>
 
-        <h4>Push to Talk <a href="http://www.couchbase.com/">Couchbase Demo</a></h4>
+        <h4>Push to Talk <a href="http://blog.couchbase.com/couchtalk-calling">Couchbase Demo</a></h4>
         <p><strong>Hold down the space bar</strong> while you are talking to record.
           <em>All messages are public. </em>
         </p>
@@ -489,8 +489,7 @@ var
 
         <RecentRooms id={this.props.id}/>
 
-        <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a>
-          <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a> or <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
+        <aside><strong>1997 called: </strong> it wants you to know CouchTalk <a href="http://caniuse.com/#feat=stream">requires </a> <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>.</aside>
       </header>
       <ul className="messages">
         {this.state.messages.map(function(m, i) {
